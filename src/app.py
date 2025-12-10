@@ -1354,7 +1354,52 @@ def _display_fleet_solution(
         )
 
 
+def check_password() -> bool:
+    """パスワード認証を行います。正しいパスワードが入力された場合はTrueを返します。"""
+
+    def password_entered():
+        """パスワードが入力されたときの処理"""
+        if st.session_state["password"] == st.secrets["password"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # パスワードをセッションに保存しない
+        else:
+            st.session_state["password_correct"] = False
+
+    # 初回アクセス時
+    if "password_correct" not in st.session_state:
+        st.title("🔐 資源回収ルート最適化ツール")
+        st.markdown("---")
+        st.text_input(
+            "パスワードを入力してください",
+            type="password",
+            on_change=password_entered,
+            key="password",
+        )
+        return False
+
+    # パスワードが間違っている場合
+    elif not st.session_state["password_correct"]:
+        st.title("🔐 資源回収ルート最適化ツール")
+        st.markdown("---")
+        st.text_input(
+            "パスワードを入力してください",
+            type="password",
+            on_change=password_entered,
+            key="password",
+        )
+        st.error("😕 パスワードが正しくありません")
+        return False
+
+    # パスワードが正しい場合
+    else:
+        return True
+
+
 def main() -> None:
+    # パスワード認証チェック
+    if not check_password():
+        st.stop()
+
     st.title("資源回収ルート最適化ツール")
     processed_master = load_processed_master_cached()
     _init_session_state(processed_master)
