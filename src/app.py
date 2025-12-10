@@ -356,7 +356,8 @@ def _ensure_selection_defaults(node_ids: List[str]) -> None:
         preferred = _find_closest_node(node_ids, target_lat=36.42025757338635, target_lon=139.3464551140531)
         st.session_state["depot_id"] = preferred or node_ids[0]
     if st.session_state.get("sink_id") not in node_ids:
-        st.session_state["sink_id"] = node_ids[1] if len(node_ids) > 1 else node_ids[0]
+        preferred = _find_closest_node(node_ids, target_lat=36.424856512788374, target_lon=139.34618718561728)
+        st.session_state["sink_id"] = preferred or (node_ids[1] if len(node_ids) > 1 else node_ids[0])
     pickups = [node for node in st.session_state.get("pickup_selection", []) if node in node_ids]
     st.session_state["pickup_selection"] = pickups
 
