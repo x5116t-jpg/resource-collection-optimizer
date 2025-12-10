@@ -28,7 +28,7 @@ def _get_data_dir() -> Path:
     """Get the data directory path."""
     return _get_base_path() / "data"
 
-from src.services import (
+from services import (
     NoSolution,
     FleetSolution,
     PointRegistry,
@@ -41,9 +41,9 @@ from src.services import (
     ProcessedMasterData,
     load_processed_master,
 )
-from src.services.master_repository import VehicleCandidate
-from src.services.route_reconstruction import reconstruct_paths
-from src.services.spatial_index import SpatialIndex
+from services.master_repository import VehicleCandidate
+from services.route_reconstruction import reconstruct_paths
+from services.spatial_index import SpatialIndex
 
 try:  # pandas is optional but improves the UI
     import pandas as pd  # type: ignore
@@ -580,7 +580,7 @@ def _vehicle_supports_resource(
 
 
 def _make_vehicle_type(record: Dict[str, object]) -> "VehicleType":
-    from src.services.vehicle_catalog import VehicleType  # local import to avoid circular type hints
+    from services.vehicle_catalog import VehicleType  # local import to avoid circular type hints
 
     name = str(record.get("name") or "").strip()
     capacity = int(record.get("capacity_kg", 0) or 0)
