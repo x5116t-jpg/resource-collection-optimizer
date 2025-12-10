@@ -1,0 +1,163 @@
+% 第3章 システムアーキテクチャ
+\section{システムアーキテクチャ}
+
+\subsection{全体構成}
+
+本システムは、入力層、処理層、データ格納層、出力層の4層で構成される。
+図\ref{fig:system_architecture}にシステムの全体構成を示す。
+
+\begin{figure}[H]
+\centering
+\fbox{
+\begin{minipage}{0.9\textwidth}
+\centering
+\vspace{0.5cm}
+\textbf{【入力層】} \\
+道路ネットワークデータ、マスタデータ、ユーザー選択 \\
+\vspace{0.3cm}
+$\downarrow$ \\
+\vspace{0.3cm}
+\textbf{【データ格納層】} \\
+NetworkXグラフ、地点レジストリ、車種カタログ、\\
+距離行列、空間インデックス \\
+\vspace{0.3cm}
+$\downarrow$ \\
+\vspace{0.3cm}
+\textbf{【処理層】} \\
+データ読込 → 地点選択 → 車種割当 → 距離計算 →\\
+ルート最適化 → 結果生成 \\
+\vspace{0.3cm}
+$\downarrow$ \\
+\vspace{0.3cm}
+\textbf{【出力層】} \\
+最適ルート情報、コスト詳細、エネルギー消費量、地図表示 \\
+\vspace{0.5cm}
+\end{minipage}
+}
+\caption{システムの全体構成}
+\label{fig:system_architecture}
+\end{figure}
+
+\subsection{入力層}
+
+入力層では、以下の3種類のデータを受け取る：
+
+\subsubsection{道路ネットワークデータ}
+\begin{itemize}
+    \item \textbf{形式}：JSON
+    \item \textbf{内容}：ノード情報（地点ID、緯度経度）、エッジ情報（道路接続、距離）
+    \item \textbf{データソース}：OSM（OpenStreetMap）
+\end{itemize}
+
+\subsubsection{マスタデータ}
+\begin{itemize}
+    \item \textbf{resources.json}：資源種別（紙、プラスチック等）の特性データ
+    \item \textbf{vehicles.json}：車種情報（容量、コスト、エネルギー消費原単位）
+    \item \textbf{compatibility.json}：資源と車種の適合性マトリクス
+\end{itemize}
+
+\subsubsection{ユーザー選択情報}
+\begin{itemize}
+    \item \textbf{車庫地点}：出発・帰着地点の座標
+    \item \textbf{回収地点}：回収する地点の座標、資源種別、回収量
+    \item \textbf{集積場所}：終点の座標
+\end{itemize}
+
+\subsection{データ格納層}
+
+データ格納層では、最適化処理に必要なデータ構造を保持する：
+
+\begin{table}[H]
+\centering
+\caption{データ格納層の構成要素}
+\label{tab:data_layer}
+\begin{tabular}{lp{9cm}}
+\toprule
+\textbf{データ構造} & \textbf{役割} \\
+\midrule
+NetworkXグラフ & ノードとエッジの関係性、最短経路探索の基盤 \\
+地点レジストリ & 車庫・回収地点・集積場所の統合管理 \\
+車種カタログ & 利用可能な車種のリストとコスト情報 \\
+距離行列 & 全地点間の最短距離（N×N行列） \\
+空間インデックス & 地図クリック時の最寄りノード高速検索 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{処理層}
+
+処理層では、以下の6ステップで最適化を実行する：
+
+\subsubsection{ステップ1：データ読込・初期化}
+\begin{itemize}
+    \item JSON形式の道路ネットワークを読み込み
+    \item NetworkXグラフに変換
+    \item マスタデータのパースとキャッシュ構築
+\end{itemize}
+
+\subsubsection{ステップ2：地点選択}
+\begin{itemize}
+    \item ユーザーの地図クリック位置を取得
+    \item 空間インデックスで最寄りノードを検索
+    \item 選択地点の管理と検証
+\end{itemize}
+
+\subsubsection{ステップ3：車種割当プラン生成}
+\begin{itemize}
+    \item 資源種別ごとに対応可能な車種を抽出
+    \item コスト評価関数による最適車種の選択
+    \item 複数資源の場合の車種割当最適化
+\end{itemize}
+
+\subsubsection{ステップ4：距離行列計算}
+\begin{itemize}
+    \item 選択された全地点間の最短経路を計算
+    \item NetworkXのDijkstra法による実装
+    \item 計算結果のキャッシュ保存
+\end{itemize}
+
+\subsubsection{ステップ5：ルート最適化}
+\begin{itemize}
+    \item VRPを解くためのヒューリスティックアルゴリズム
+    \item 容量制約と資源適合性の考慮
+    \item 局所最適化による改善
+\end{itemize}
+
+\subsubsection{ステップ6：結果生成・可視化}
+\begin{itemize}
+    \item コスト詳細の計算（固定費・変動費）
+    \item エネルギー消費量の算出
+    \item 経路の再構成と地図表示用データの生成
+\end{itemize}
+
+\subsection{出力層}
+
+出力層では、最適化結果を以下の形式で提供する：
+
+\begin{itemize}
+    \item \textbf{最適ルート情報}：訪問順序、総距離、使用車種
+    \item \textbf{コスト詳細}：固定費・変動費の項目別内訳、総コスト
+    \item \textbf{エネルギー情報}：総消費電力量、CO2削減効果
+    \item \textbf{地図表示}：インタラクティブな経路可視化
+\end{itemize}
+
+\subsection{技術スタック}
+
+本システムの実装に使用した主要技術を表\ref{tab:tech_stack}に示す。
+
+\begin{table}[H]
+\centering
+\caption{主要技術スタック}
+\label{tab:tech_stack}
+\begin{tabular}{llp{6cm}}
+\toprule
+\textbf{カテゴリ} & \textbf{技術} & \textbf{用途} \\
+\midrule
+言語 & Python 3.8+ & システム全体の実装 \\
+Webフレームワーク & Streamlit & UIの構築、インタラクティブ操作 \\
+グラフ処理 & NetworkX & 道路ネットワーク解析、最短経路計算 \\
+地図表示 & Folium & インタラクティブ地図の表示 \\
+データ処理 & Pandas & テーブル編集、データ整形 \\
+\bottomrule
+\end{tabular}
+\end{table}

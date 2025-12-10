@@ -1,0 +1,181 @@
+\subsection{システムの起動方法}
+
+本システムは、配布されたフォルダ「ResouceCollection\_05」に含まれる\texttt{run\_app.bat}をダブルクリックするだけで起動できる。以下に、起動から運用までの手順を説明する。
+
+\subsubsection{初回起動}
+
+\paragraph{ステップ1：必要な環境の確認}
+
+本システムの実行には、以下の環境が必要である：
+
+\begin{itemize}
+    \item \textbf{OS}：Windows 10以降（推奨：Windows 11）
+    \item \textbf{Python}：3.8以降（インストールされていない場合は、\url{https://www.python.org/}からダウンロード）
+    \item \textbf{インターネット接続}：初回起動時に必要なライブラリのダウンロードと地図表示のため
+    \item \textbf{Webブラウザ}：Google Chrome、Firefox、Edge（最新版）
+\end{itemize}
+
+\paragraph{ステップ2：システムの起動}
+
+\begin{enumerate}
+    \item 配布フォルダ「\texttt{D:\textbackslash py\textbackslash Resource Collection\textbackslash ResouceCollection\_05}」を開く
+    \item \texttt{run\_app.bat}ファイルをダブルクリックする
+    \item コマンドプロンプトウィンドウが開き、システムの初期化が始まる
+    \item 初回起動時は必要なPythonライブラリのインストールが自動的に行われる（数分かかる場合がある）
+    \item インストールが完了すると、Webブラウザが自動的に起動し、システムのUIが表示される
+    \item ブラウザのアドレスバーには「\texttt{http://localhost:8501}」と表示される
+\end{enumerate}
+
+\subsubsection{システムの操作手順}
+
+システムのUIは、左側のサイドバーと右側のメイン画面で構成される。以下に、基本的な操作手順を示す。
+
+\paragraph{1. 道路ネットワークの選択}
+
+\begin{enumerate}
+    \item サイドバーの「道路ネットワークの選択」セクションで、使用する道路データを選択する
+    \item デフォルトでは「群馬県道路ネットワーク」が選択されている
+    \item カスタムネットワークを使用する場合は、「カスタムファイルをアップロード」を選択し、JSON形式の道路データファイルを選択する
+\end{enumerate}
+
+\paragraph{2. 拠点の設定}
+
+\begin{enumerate}
+    \item サイドバーの「拠点設定」セクションで、「デポ（車庫）を設定」ボタンをクリックする
+    \item メイン画面の地図上で、車両の出発・帰着地点をクリックする
+    \item 設定された地点に赤色のマーカーが表示される
+\end{enumerate}
+
+\paragraph{3. 回収地点の設定}
+
+\begin{enumerate}
+    \item サイドバーの「回収地点設定」セクションで、「回収地点を追加」ボタンをクリックする
+    \item 地図上で回収地点をクリックする
+    \item ポップアップウィンドウが表示されるので、以下の情報を入力する：
+    \begin{itemize}
+        \item 資源種別（11種類から選択）
+        \item 回収量（kg単位）
+        \item 地点名（任意）
+    \end{itemize}
+    \item 「追加」ボタンをクリックして確定する
+    \item 設定された地点に青色のマーカーが表示される
+    \item 複数の回収地点を追加する場合は、この操作を繰り返す
+\end{enumerate}
+
+\paragraph{4. 集積場所の設定}
+
+\begin{enumerate}
+    \item サイドバーの「集積場所設定」セクションで、「集積場所を設定」ボタンをクリックする
+    \item 地図上で資源の最終目的地をクリックする
+    \item 設定された地点に緑色のマーカーが表示される
+\end{enumerate}
+
+\paragraph{5. 車両の選択}
+
+\begin{enumerate}
+    \item サイドバーの「車両選択」セクションで、使用する車両タイプを選択する
+    \item システムが自動的に、選択された資源に適合する車両のみを表示する
+    \item 適合する車両が複数ある場合、コスト試算を確認して選択できる
+\end{enumerate}
+
+\paragraph{6. 最適化の実行}
+
+\begin{enumerate}
+    \item すべての設定が完了したら、サイドバー下部の「最適化を実行」ボタンをクリックする
+    \item システムが最適経路を計算する（通常数秒～数十秒）
+    \item 計算が完了すると、最適化されたルートが地図上に表示される
+\end{enumerate}
+
+\subsubsection{結果の確認}
+
+最適化計算が完了すると、以下の情報がメイン画面に表示される。
+
+\paragraph{地図表示}
+
+\begin{itemize}
+    \item 最適化されたルートが青色の線で表示される
+    \item 各区間をクリックすると、区間距離とコストがポップアップ表示される
+    \item ズームイン・ズームアウト、地図の移動が可能
+\end{itemize}
+
+\paragraph{ルート情報}
+
+\begin{itemize}
+    \item 訪問順序と各地点間の距離
+    \item 総走行距離（km）
+    \item 推定所要時間
+\end{itemize}
+
+\paragraph{コスト詳細}
+
+\begin{itemize}
+    \item 変動費12項目の内訳と金額
+    \item 固定費13項目の内訳と金額
+    \item 総コスト（円）
+    \item コスト単価（円/km）
+\end{itemize}
+
+\paragraph{エネルギー消費}
+
+\begin{itemize}
+    \item 燃料消費量（L）
+    \item CO$_2$排出量（kg）
+\end{itemize}
+
+\subsubsection{データのエクスポート}
+
+計算結果は、以下の形式でエクスポート可能である：
+
+\begin{enumerate}
+    \item サイドバーの「結果をエクスポート」セクションで、出力形式を選択する
+    \item \textbf{CSV形式}：Excelで開けるデータファイル（ルート情報、コスト詳細）
+    \item \textbf{JSON形式}：プログラムで読み込み可能な構造化データ
+    \item \textbf{HTML形式}：地図を含む完全なレポート（印刷可能）
+    \item \textbf{PDF形式}：印刷用の正式レポート（要追加ライブラリ）
+    \item 「ダウンロード」ボタンをクリックして、ファイルを保存する
+\end{enumerate}
+
+\subsubsection{システムの終了}
+
+\begin{enumerate}
+    \item Webブラウザを閉じる
+    \item コマンドプロンプトウィンドウで「Ctrl + C」キーを押す
+    \item 確認メッセージが表示されたら「Y」を入力してEnterキーを押す
+    \item コマンドプロンプトウィンドウが閉じ、システムが終了する
+\end{enumerate}
+
+\subsubsection{トラブルシューティング}
+
+\paragraph{起動しない場合}
+
+\begin{itemize}
+    \item Pythonが正しくインストールされているか確認する
+    \item コマンドプロンプトで「\texttt{python --version}」を実行し、バージョン3.8以降であることを確認する
+    \item インターネット接続を確認する（初回起動時のライブラリインストールに必要）
+    \item ウイルス対策ソフトによってブロックされていないか確認する
+\end{itemize}
+
+\paragraph{地図が表示されない場合}
+
+\begin{itemize}
+    \item インターネット接続を確認する
+    \item ブラウザのキャッシュをクリアする
+    \item ブラウザを変更してみる（Chrome推奨）
+\end{itemize}
+
+\paragraph{最適化が終わらない場合}
+
+\begin{itemize}
+    \item 回収地点が多すぎる可能性がある（10地点以下を推奨）
+    \item 一度ブラウザをリロードして、設定をやり直す
+    \item 道路ネットワークデータが正しく読み込まれているか確認する
+\end{itemize}
+
+\paragraph{エラーメッセージが表示される場合}
+
+\begin{itemize}
+    \item エラーメッセージの内容を記録する
+    \item 入力データが正しいか確認する（座標、資源量など）
+    \item システムを再起動する
+    \item 問題が解決しない場合は、システム管理者に連絡する
+\end{itemize}

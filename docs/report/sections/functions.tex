@@ -1,0 +1,164 @@
+% 第5章 機能
+\section{機能}
+
+\subsection{地点選択機能}
+
+\subsubsection{地図クリックによる選択}
+
+ユーザーは地図上をクリックすることで、以下の地点を直感的に選択できる：
+
+\begin{itemize}
+    \item \textbf{車庫}：車両の出発・帰着地点
+    \item \textbf{回収地点}：資源を回収する地点（複数選択可）
+    \item \textbf{集積場所}：回収した資源を集める終点
+\end{itemize}
+
+システムは、クリック位置から最も近いノード（道路上の地点）を自動的に特定し、選択地点として設定する。
+
+\subsubsection{空間インデックスによる高速検索}
+
+地図クリック時の最寄りノード検索には、空間インデックス（KD木）を使用している。
+これにより、数千〜数万のノードから最寄りを高速に検索できる。
+
+\textbf{検索時間：} $O(\log N)$ （N: ノード数）
+
+\subsection{車種割当機能}
+
+\subsubsection{自動車種選択}
+
+システムは、以下のロジックで最適な車種を自動選択する：
+
+\begin{enumerate}
+    \item 各資源種別に対して対応可能な車種を抽出
+    \item 各車種のコスト評価スコアを計算
+    \item 最もコスト効率の良い車種を選択
+\end{enumerate}
+
+\textbf{コスト評価式：}
+\begin{equation}
+\text{スコア} = \text{距離単価} + \text{固定費単価}
+\end{equation}
+
+\subsubsection{適合性チェック}
+
+マスタデータに基づき、車種と資源の適合性を自動的に判定する。
+適合性マトリクスの例を表\ref{tab:compatibility_example}に示す。
+
+\begin{table}[H]
+\centering
+\caption{車種と資源の適合性マトリクス（例）}
+\label{tab:compatibility_example}
+\begin{tabular}{lccc}
+\toprule
+& \textbf{紙} & \textbf{プラスチック} & \textbf{ガラス} \\
+\midrule
+小型EV & ○ & ○ & × \\
+大型トラック & ○ & ○ & ○ \\
+専用車 & × & × & ○ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{ルート最適化機能}
+
+\subsubsection{最適化手法}
+
+VRP（Vehicle Routing Problem）の変種を解くため、
+貪欲法ベースのヒューリスティックアルゴリズムを採用した。
+
+\textbf{アルゴリズムの特徴：}
+\begin{itemize}
+    \item 初期解を近傍優先で生成
+    \item 2-opt法による局所最適化
+    \item 容量制約と資源適合性を考慮
+\end{itemize}
+
+\subsubsection{複数車両への対応}
+
+資源種別が複数ある場合、以下の方法で車両を割り当てる：
+
+\begin{enumerate}
+    \item 全資源を1台で運べる場合：その車両で最適化
+    \item 複数台が必要な場合：資源ごとに車両を割り当て、個別に最適化
+\end{enumerate}
+
+\subsection{コスト計算機能}
+
+\subsubsection{詳細内訳の表示}
+
+システムは、以下の項目別にコストを表示する：
+
+\textbf{固定費項目：}
+\begin{itemize}
+    \item 人件費
+    \item 車両償却費
+    \item 保険料
+    \item 車検・点検費用
+\end{itemize}
+
+\textbf{変動費項目：}
+\begin{itemize}
+    \item 燃料費（または電気代）
+    \item タイヤ代
+    \item 修繕費
+    \item 消耗品費
+\end{itemize}
+
+\subsubsection{計算式の可視化}
+
+ユーザーの理解を助けるため、コスト計算式をLaTeX形式で表示する：
+
+\begin{equation}
+\text{総コスト} = \text{変動費} + \text{固定費}
+\end{equation}
+
+\subsection{エネルギー計算機能}
+
+\subsubsection{消費量の算出}
+
+EV（電気自動車）の場合、以下の式でエネルギー消費量を計算する：
+
+\begin{equation}
+\text{消費電力量}[\text{kWh}] = \text{原単位}[\text{kWh/km}] \times \text{走行距離}[\text{km}]
+\end{equation}
+
+\subsubsection{CO2削減効果の試算}
+
+ガソリン車からEVへの置き換え時のCO2削減効果を試算する：
+
+\begin{equation}
+\text{CO}_2\text{削減量}[\text{kg}] = \text{ガソリン車排出量} - \text{EV車排出量}
+\end{equation}
+
+\subsection{可視化機能}
+
+\subsubsection{インタラクティブ地図}
+
+Foliumライブラリを使用し、以下の機能を持つ地図を表示する：
+
+\begin{itemize}
+    \item ズーム・パン操作
+    \item マーカークリックによる地点情報表示
+    \item 訪問順序の番号付きマーカー
+    \item 経路の青線表示
+\end{itemize}
+
+\subsubsection{マーカーの色分け}
+
+地点の種類に応じてマーカーを色分けする：
+
+\begin{table}[H]
+\centering
+\caption{マーカーの色分け}
+\label{tab:marker_colors}
+\begin{tabular}{ll}
+\toprule
+\textbf{地点種類} & \textbf{色} \\
+\midrule
+車庫（出発地） & 緑 \\
+回収地点 & 青 \\
+集積場所（終点） & 赤 \\
+最新選択地点 & 黄色枠 \\
+\bottomrule
+\end{tabular}
+\end{table}

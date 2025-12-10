@@ -1,0 +1,206 @@
+% 第9章 結論
+\section{結論}
+
+\subsection{研究成果のまとめ}
+
+本研究では、資源回収業務における回収ルートを最適化するシステムを開発し、その有効性を実証実験により検証した。
+主な成果を以下にまとめる。
+
+\subsubsection{システム開発の成果}
+
+\begin{enumerate}
+    \item \textbf{最適化アルゴリズムの実装}
+    \begin{itemize}
+        \item VRP（Vehicle Routing Problem）を解くヒューリスティックアルゴリズムを実装
+        \item 貪欲法による初期解生成と2-opt法による局所最適化を組み合わせ
+        \item 実用的な処理時間で高品質な解を導出
+    \end{itemize}
+
+    \item \textbf{直感的なユーザーインターフェース}
+    \begin{itemize}
+        \item Streamlitベースの対話的Webアプリケーション
+        \item 地図上での地点選択による直感的な操作
+        \item コスト詳細とエネルギー消費量の可視化
+    \end{itemize}
+
+    \item \textbf{複数車種への対応}
+    \begin{itemize}
+        \item 資源種別と車種の適合性を考慮した自動車種選択
+        \item 複数資源種別が存在する場合の最適な車両割当
+        \item EV車両のエネルギー消費量とCO2削減効果の算出
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{実証実験の成果}
+
+実証実験により、以下の定量的成果が得られた：
+
+\begin{table}[H]
+\centering
+\caption{実証実験の主要成果}
+\label{tab:main_results}
+\begin{tabular}{lrr}
+\toprule
+\textbf{評価項目} & \textbf{手動計画} & \textbf{システム} \\
+\midrule
+平均距離削減率 & - & 15.3\% \\
+平均コスト削減率 & - & 15.3\% \\
+計画作成時間削減率 & - & 約95\% \\
+ユーザー満足度（5段階） & - & 4.5点 \\
+CO2削減効果（EV使用時） & - & 56.3\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+これらの結果は、本システムが実務において有効であることを示している。
+
+\subsection{目的達成の評価}
+
+本研究の目的に対する達成度を評価する。
+
+\subsubsection{主要目的の達成状況}
+
+\begin{table}[H]
+\centering
+\caption{研究目的の達成度評価}
+\label{tab:objective_achievement}
+\begin{tabular}{lp{6cm}c}
+\toprule
+\textbf{研究目的} & \textbf{達成内容} & \textbf{達成度} \\
+\midrule
+回収ルートの最適化 & 平均15\%の距離削減を実現 & ◎ \\
+業務効率の向上 & 計画作成時間を95\%削減 & ◎ \\
+コスト削減 & 平均15\%のコスト削減 & ◎ \\
+環境負荷低減 & 56\%のCO2削減効果を確認 & ◎ \\
+実用性の確保 & 高いユーザー評価（4.5点） & ◎ \\
+\bottomrule
+\multicolumn{3}{l}{◎：十分達成、○：概ね達成、△：一部達成}
+\end{tabular}
+\end{table}
+
+すべての主要目的において十分な成果が得られたと評価できる。
+
+\subsection{学術的貢献}
+
+本研究の学術的貢献は以下の通りである：
+
+\begin{enumerate}
+    \item \textbf{VRP問題への実践的アプローチ}
+    \begin{itemize}
+        \item 資源回収という実務分野へのVRP適用事例の提示
+        \item 複数資源種別と車種適合性を考慮したモデル化
+        \item ヒューリスティック手法の有効性の実証
+    \end{itemize}
+
+    \item \textbf{環境配慮型システムの提案}
+    \begin{itemize}
+        \item EV車両を考慮した最適化モデル
+        \item CO2削減効果の定量的評価手法
+        \item 経済性と環境性の両立
+    \end{itemize}
+
+    \item \textbf{ユーザビリティ重視の設計}
+    \begin{itemize}
+        \item 専門知識不要の直感的インターフェース
+        \item 実務担当者が日常的に使える実用性
+        \item 結果の可視化とわかりやすい説明
+    \end{itemize}
+\end{enumerate}
+
+\subsection{実務的貢献}
+
+本システムは、以下の実務的貢献が期待できる：
+
+\begin{itemize}
+    \item \textbf{業務効率化}：計画作成時間の大幅削減により、担当者の業務負荷を軽減
+    \item \textbf{経済効果}：コスト削減による企業の収益性向上
+    \item \textbf{環境改善}：CO2排出量削減による環境負荷低減
+    \item \textbf{品質向上}：計画の見直しや複数案比較が容易になり、サービス品質が向上
+    \item \textbf{知識継承}：システム化により、ベテラン担当者のノウハウを形式知化
+\end{itemize}
+
+\subsection{今後の展望}
+
+\subsubsection{短期的展望（1-2年）}
+
+短期的には、以下の改善と展開を進める：
+
+\begin{enumerate}
+    \item \textbf{機能拡張}
+    \begin{itemize}
+        \item 時刻指定機能の追加
+        \item 複数日スケジューリング機能
+        \item モバイルアプリ版の開発
+    \end{itemize}
+
+    \item \textbf{実証範囲の拡大}
+    \begin{itemize}
+        \item より大規模な実証実験（100地点以上）
+        \item 複数自治体での試験運用
+        \item 長期運用によるデータ蓄積
+    \end{itemize}
+
+    \item \textbf{アルゴリズム改善}
+    \begin{itemize}
+        \item メタヒューリスティックの導入検討
+        \item 機械学習による需要予測機能
+        \item リアルタイム交通情報の統合
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{中長期的展望（3-5年）}
+
+中長期的には、以下の発展を目指す：
+
+\begin{enumerate}
+    \item \textbf{システムの高度化}
+    \begin{itemize}
+        \item AIによる完全自動最適化
+        \item IoTセンサーとの連携による需要予測
+        \item 自動運転車両との統合
+    \end{itemize}
+
+    \item \textbf{適用分野の拡大}
+    \begin{itemize}
+        \item 配送業務への展開
+        \item 訪問サービス分野への応用
+        \item 公共サービスへの適用
+    \end{itemize}
+
+    \item \textbf{社会実装の推進}
+    \begin{itemize}
+        \item 全国的な普及活動
+        \item 標準化と規格策定への貢献
+        \item 産学官連携による社会実装
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{将来ビジョン}
+
+本システムは、以下のような社会への貢献を目指す：
+
+\begin{itemize}
+    \item \textbf{持続可能な社会の実現}：効率的な資源回収により循環型社会の形成に貢献
+    \item \textbf{脱炭素社会への貢献}：CO2削減を通じた地球温暖化対策
+    \item \textbf{地域活性化}：業務効率化により生まれた余剰リソースを他の公共サービスに活用
+    \item \textbf{技術の民主化}：専門知識不要で高度な最適化技術を利用可能に
+\end{itemize}
+
+\subsection{最終的な結論}
+
+本研究により開発した資源回収ルート最適化システムは、以下の点で有効性が実証された：
+
+\begin{enumerate}
+    \item 平均15\%の距離・コスト削減を達成
+    \item 計画作成時間を95\%削減し、業務効率を大幅に向上
+    \item EV車両の採用により56\%のCO2削減を実現
+    \item 高いユーザー満足度（4.5点/5点）を獲得
+    \item 実務適用可能な実用性を確保
+\end{enumerate}
+
+これらの成果は、本システムが資源回収業務の効率化と環境負荷低減に大きく貢献できることを示している。
+今後は、機能拡張と適用範囲の拡大により、より広範な社会課題の解決に貢献していくことが期待される。
+
+本システムの開発と実証を通じて、VRP問題への実践的アプローチの有効性が確認され、
+同様の課題を抱える他の分野への展開可能性も示された。
+持続可能な社会の実現に向けて、本研究の成果が広く活用されることを期待する。

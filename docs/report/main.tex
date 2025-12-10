@@ -1,0 +1,114 @@
+% 資源回収ルート最適化システム - 報告書
+% コンパイル方法: pdflatex main.tex (2回実行)
+
+\documentclass[a4paper,12pt]{jsarticle}
+
+% パッケージの読み込み
+\usepackage[utf8]{inputenc}
+\usepackage[top=25mm,bottom=25mm,left=25mm,right=25mm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{here}
+\usepackage{subcaption}
+
+% ヘッダー・フッターの設定
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% コードリスティングの設定
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    backgroundcolor=\color{gray!10}
+}
+
+% セクションタイトルの設定
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% ハイパーリンクの設定（最後に読み込む）
+\usepackage[
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+]{hyperref}
+
+% ドキュメント情報
+\title{
+    \vspace{2cm}
+    {\Huge \textbf{資源回収ルート最適化システム}} \\
+    \vspace{1cm}
+    {\Large システム開発報告書} \\
+    \vspace{2cm}
+}
+
+\author{
+    開発チーム \\
+    \vspace{0.5cm}
+}
+
+\date{
+    2025年11月28日 \\
+    \vspace{1cm}
+    バージョン 1.0
+}
+
+% ドキュメント本体
+\begin{document}
+
+% タイトルページ
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+% 目次
+\tableofcontents
+\newpage
+
+% 図表目次
+\listoffigures
+\listoftables
+\newpage
+
+% 各章を読み込み
+\input{sections/abstract}
+\input{sections/introduction}
+\input{sections/system_architecture}
+\input{sections/implementation}
+\input{sections/functions}
+\input{sections/usage}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+% 参考文献
+\input{sections/references}
+
+% 付録
+\appendix
+\input{sections/appendix}
+
+\end{document}

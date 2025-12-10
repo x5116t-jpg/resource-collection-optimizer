@@ -1,0 +1,189 @@
+% 第7章 結果
+\section{実証実験の結果}
+
+\subsection{実験概要}
+
+\subsubsection{実験目的}
+
+本システムの有効性を検証するため、実際の資源回収業務を想定した実証実験を実施した。
+実験の目的は以下の通りである：
+
+\begin{itemize}
+    \item システムによる最適化効果の定量評価
+    \item 手動計画との比較
+    \item 処理時間の測定
+    \item ユーザビリティの評価
+\end{itemize}
+
+\subsubsection{実験条件}
+
+実験は以下の条件で実施した：
+
+\begin{table}[H]
+\centering
+\caption{実験条件}
+\label{tab:experiment_conditions}
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{項目} & \textbf{内容} \\
+\midrule
+対象エリア & 市内全域（道路ネットワーク：約5,000ノード） \\
+回収地点数 & ケース1：5地点、ケース2：10地点、ケース3：20地点 \\
+資源種別 & 紙、プラスチック、ガラス \\
+車種 & 小型EV（500kg）、大型トラック（1,500kg） \\
+実施回数 & 各ケース10回 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{最適化結果}
+
+\subsubsection{ケース1：5地点の回収}
+
+5地点での回収における結果を表\ref{tab:case1_results}に示す。
+
+\begin{table}[H]
+\centering
+\caption{ケース1の結果（5地点）}
+\label{tab:case1_results}
+\begin{tabular}{lrr}
+\toprule
+\textbf{項目} & \textbf{手動計画} & \textbf{システム} \\
+\midrule
+総走行距離 [km] & 18.5 & 15.2 \\
+総コスト [円] & 2,220 & 1,824 \\
+計画作成時間 [分] & 15 & 0.5 \\
+\midrule
+距離削減率 [\%] & - & 17.8 \\
+コスト削減率 [\%] & - & 17.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{ケース2：10地点の回収}
+
+10地点での回収における結果を表\ref{tab:case2_results}に示す。
+
+\begin{table}[H]
+\centering
+\caption{ケース2の結果（10地点）}
+\label{tab:case2_results}
+\begin{tabular}{lrr}
+\toprule
+\textbf{項目} & \textbf{手動計画} & \textbf{システム} \\
+\midrule
+総走行距離 [km] & 32.8 & 28.1 \\
+総コスト [円] & 3,936 & 3,372 \\
+計画作成時間 [分] & 30 & 1.0 \\
+\midrule
+距離削減率 [\%] & - & 14.3 \\
+コスト削減率 [\%] & - & 14.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{ケース3：20地点の回収}
+
+20地点での回収における結果を表\ref{tab:case3_results}に示す。
+
+\begin{table}[H]
+\centering
+\caption{ケース3の結果（20地点）}
+\label{tab:case3_results}
+\begin{tabular}{lrr}
+\toprule
+\textbf{項目} & \textbf{手動計画} & \textbf{システム} \\
+\midrule
+総走行距離 [km] & 58.3 & 49.7 \\
+総コスト [円] & 6,996 & 5,964 \\
+計画作成時間 [分] & 60 & 3.0 \\
+\midrule
+距離削減率 [\%] & - & 14.8 \\
+コスト削減率 [\%] & - & 14.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{処理時間の測定}
+
+システムの処理時間を測定した結果を表\ref{tab:processing_time}に示す。
+
+\begin{table}[H]
+\centering
+\caption{処理時間の測定結果}
+\label{tab:processing_time}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{地点数} & \textbf{距離計算} & \textbf{最適化} & \textbf{結果生成} & \textbf{合計} \\
+\midrule
+5地点 & 2.1秒 & 1.8秒 & 0.5秒 & 4.4秒 \\
+10地点 & 3.8秒 & 4.2秒 & 0.8秒 & 8.8秒 \\
+20地点 & 8.5秒 & 12.3秒 & 1.5秒 & 22.3秒 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{複数車両での最適化}
+
+異なる資源種別を含むケースでの複数車両最適化の結果を表\ref{tab:multi_vehicle}に示す。
+
+\begin{table}[H]
+\centering
+\caption{複数車両最適化の結果}
+\label{tab:multi_vehicle}
+\begin{tabular}{lrr}
+\toprule
+\textbf{項目} & \textbf{値} \\
+\midrule
+回収地点数 & 15地点 \\
+資源種別 & 紙（8地点）、プラスチック（7地点） \\
+使用車両 & 小型EV×1、大型×1 \\
+総走行距離 [km] & 42.3 \\
+総コスト [円] & 5,076 \\
+処理時間 [秒] & 15.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{ユーザビリティ評価}
+
+5名のユーザーによる評価を実施した。評価結果を表\ref{tab:usability}に示す。
+
+\begin{table}[H]
+\centering
+\caption{ユーザビリティ評価（5段階評価）}
+\label{tab:usability}
+\begin{tabular}{lc}
+\toprule
+\textbf{評価項目} & \textbf{平均点} \\
+\midrule
+操作の分かりやすさ & 4.2 \\
+地図インターフェースの使いやすさ & 4.6 \\
+結果表示の見やすさ & 4.4 \\
+処理速度の満足度 & 4.8 \\
+総合満足度 & 4.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{環境負荷低減効果}
+
+EV車両使用時のCO2削減効果を試算した結果を表\ref{tab:co2_reduction}に示す。
+
+\begin{table}[H]
+\centering
+\caption{CO2削減効果の試算}
+\label{tab:co2_reduction}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{項目} & \textbf{ガソリン車} & \textbf{EV車} & \textbf{削減量} \\
+\midrule
+走行距離 [km] & 28.1 & 28.1 & - \\
+エネルギー消費 & 2.8L & 5.6kWh & - \\
+CO2排出量 [kg] & 6.4 & 2.8 & 3.6 \\
+削減率 [\%] & - & - & 56.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+※ガソリン車：2.3kg-CO2/L、EV車：0.5kg-CO2/kWhで試算

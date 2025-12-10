@@ -1,0 +1,174 @@
+% 第6章 使用方法
+\section{使用方法}
+
+\subsection{システムの起動}
+
+\subsubsection{起動手順}
+
+システムを起動するには、以下の手順を実行する：
+
+\begin{enumerate}
+    \item プロジェクトフォルダに移動
+    \item 仮想環境をアクティブ化（必要な場合）
+    \item Streamlitアプリを起動
+\end{enumerate}
+
+\textbf{コマンド例：}
+\begin{lstlisting}[language=bash, caption=起動コマンド]
+cd /path/to/project
+.venv/Scripts/activate
+streamlit run src/app.py
+\end{lstlisting}
+
+起動後、ブラウザが自動的に開き、システムのUIが表示される（通常は http://localhost:8501）。
+
+\subsection{基本的な操作フロー}
+
+システムの基本的な使用フローを図\ref{fig:usage_flow}に示す。
+
+\begin{figure}[H]
+\centering
+\fbox{
+\begin{minipage}{0.8\textwidth}
+\begin{enumerate}
+    \item 道路ネットワークファイルを選択
+    \item 車庫を地図上で設定
+    \item 回収地点を地図上で設定（複数）
+    \begin{itemize}
+        \item 資源種別を選択
+        \item 回収量を入力
+    \end{itemize}
+    \item 集積場所を地図上で設定
+    \item 実行前チェックを確認
+    \item 最適化を実行
+    \item 結果を確認
+\end{enumerate}
+\end{minipage}
+}
+\caption{基本的な操作フロー}
+\label{fig:usage_flow}
+\end{figure}
+
+\subsection{詳細な操作手順}
+
+\subsubsection{ステップ1：道路ネットワークの選択}
+
+サイドバーのドロップダウンメニューから、使用する道路ネットワークファイルを選択する。
+選択後、ノード数とエッジ数が表示される。
+
+\subsubsection{ステップ2：車庫の設定}
+
+\begin{enumerate}
+    \item 「地図クリックモード」で「車庫」を選択
+    \item 地図上の車庫にしたい地点をクリック
+    \item 緑色のマーカーが表示されることを確認
+\end{enumerate}
+
+\subsubsection{ステップ3：回収地点の設定}
+
+\begin{enumerate}
+    \item 「地図クリックモード」で「回収地点」を選択
+    \item 地図上の回収地点をクリック
+    \item ダイアログが表示される
+    \item 以下の情報を入力：
+    \begin{itemize}
+        \item 回収量（kg）：0〜100,000の範囲で入力
+        \item 資源種別：プルダウンから選択
+    \end{itemize}
+    \item 「追加」ボタンをクリック
+    \item 必要な回収地点すべてについて繰り返す
+\end{enumerate}
+
+\subsubsection{ステップ4：集積場所の設定}
+
+\begin{enumerate}
+    \item 「地図クリックモード」で「集積場所」を選択
+    \item 地図上の集積場所をクリック
+    \item 赤色のマーカーが表示されることを確認
+\end{enumerate}
+
+\textbf{注意：} 車庫と集積場所は異なる地点を選択する必要がある。
+
+\subsubsection{ステップ5：実行前チェック}
+
+最適化実行前に、以下の項目がすべて満たされていることを確認する：
+
+\begin{itemize}
+    \item 車庫が設定されている
+    \item 集積場所が設定されている
+    \item 車庫と集積場所が異なる
+    \item 回収地点が1箇所以上ある
+    \item 全回収地点に資源種別が設定されている
+    \item 車種が1種類以上設定されている
+    \item 車種割当プランが作成されている
+    \item 車種割当に警告がない
+\end{itemize}
+
+\subsubsection{ステップ6：最適化の実行}
+
+\begin{enumerate}
+    \item 「最適化を実行」ボタンをクリック
+    \item プログレスバーで進捗を確認
+    \item 完了まで待機（数秒〜数十秒）
+\end{enumerate}
+
+\subsection{結果の確認方法}
+
+最適化完了後、以下の情報が表示される：
+
+\subsubsection{サマリー情報}
+\begin{itemize}
+    \item 総距離 [km]
+    \item 総コスト [円]
+    \item エネルギー消費量 [kWh]（EV車の場合）
+    \item 採用車種
+    \item ルート順（訪問順序）
+\end{itemize}
+
+\subsubsection{コスト内訳}
+\begin{itemize}
+    \item 固定費の合計
+    \item 変動費の合計
+    \item 総コスト
+    \item 項目別の詳細内訳
+\end{itemize}
+
+\subsubsection{地図表示}
+\begin{itemize}
+    \item 訪問順序を示す番号付きマーカー
+    \item 実際の道路に沿った経路（青線）
+    \item マーカーの色分け（緑：出発、青：経由、赤：終点）
+\end{itemize}
+
+\subsection{注意事項}
+
+\subsubsection{推奨される使用条件}
+
+本システムを効果的に使用するため、以下の条件を推奨する：
+
+\begin{table}[H]
+\centering
+\caption{推奨使用条件}
+\label{tab:recommended_conditions}
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{項目} & \textbf{推奨値} \\
+\midrule
+回収地点数 & 10〜20地点以内 \\
+処理時間 & 10地点：約10秒、20地点：約30秒 \\
+ブラウザ & Google Chrome（最新版） \\
+画面解像度 & 1920×1080以上 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{制限事項}
+
+以下の制限事項に注意すること：
+
+\begin{itemize}
+    \item 地点数が多い（50地点以上）と処理時間が長くなる
+    \item 複数日のスケジュールには非対応
+    \item 到着時刻の指定には非対応
+    \item 厳密解ではなく、ヒューリスティックによる近似解
+\end{itemize}

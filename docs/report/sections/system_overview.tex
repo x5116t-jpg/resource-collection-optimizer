@@ -1,0 +1,100 @@
+% 第2章 システム概要
+\section{システム概要}
+
+\subsection{システムの目的}
+
+資源回収ルート最適化システムは、道路ネットワーク上での資源回収業務において、
+以下の最適化を実現することを目的とする：
+
+\begin{itemize}
+    \item \textbf{コスト最小化}：固定費・変動費を含む総コストの最小化
+    \item \textbf{距離最小化}：総走行距離の最小化による効率化
+    \item \textbf{環境負荷低減}：エネルギー消費量（CO2排出量）の削減
+    \item \textbf{計画作成の効率化}：視覚的なインターフェースによる迅速な計画立案
+\end{itemize}
+
+\subsection{システムの特徴}
+
+本システムは、以下の特徴を有する：
+
+\subsubsection{直感的な操作性}
+\begin{itemize}
+    \item 地図上でのクリック操作による地点選択
+    \item リアルタイムでの選択状況の確認
+    \item 実行前チェックリストによる入力ミスの防止
+\end{itemize}
+
+\subsubsection{高度な最適化機能}
+\begin{itemize}
+    \item VRP（Vehicle Routing Problem）の変種を解くアルゴリズム
+    \item 車両容量制約と資源適合性を考慮した最適化
+    \item 複数車両の同時最適化
+\end{itemize}
+
+\subsubsection{詳細な分析機能}
+\begin{itemize}
+    \item 固定費・変動費の項目別詳細表示
+    \item エネルギー消費量の計算
+    \item CO2削減効果の可視化
+\end{itemize}
+
+\subsubsection{視覚的な結果表示}
+\begin{itemize}
+    \item インタラクティブ地図上でのルート表示
+    \item 訪問順序の番号付きマーカー
+    \item コスト計算式の数式表示
+\end{itemize}
+
+\subsection{システムの適用範囲}
+
+本システムは、以下の業務に適用可能である：
+
+\begin{table}[H]
+\centering
+\caption{システムの適用可能な業務}
+\label{tab:applicable_tasks}
+\begin{tabular}{ll}
+\toprule
+\textbf{業務分類} & \textbf{具体例} \\
+\midrule
+資源回収 & 紙、プラスチック、ガラス等の分別回収 \\
+廃棄物収集 & 一般廃棄物、産業廃棄物の収集運搬 \\
+配送計画 & リサイクル品の配送、資材の輸送 \\
+巡回サービス & 点検業務、メンテナンス業務 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{システムの制約事項}
+
+本システムには、以下の制約事項が存在する：
+
+\begin{itemize}
+    \item \textbf{地点数の上限}：推奨20地点以内、最大50地点程度
+    \item \textbf{単一日のルート}：複数日のスケジューリングには非対応
+    \item \textbf{時間指定}：到着時刻の指定には非対応
+    \item \textbf{最適性}：ヒューリスティックアルゴリズムのため厳密解ではない
+    \item \textbf{道路制約}：一方通行や車両制限は道路ネットワークデータに依存
+\end{itemize}
+
+\subsection{期待される効果}
+
+本システムの導入により、以下の効果が期待される：
+
+\begin{table}[H]
+\centering
+\caption{期待される効果}
+\label{tab:expected_effects}
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{項目} & \textbf{効果} \\
+\midrule
+走行距離 & 最適化により平均10〜20\%削減 \\
+燃料費 & 走行距離削減に比例した燃料費の削減 \\
+CO2排出量 & EV導入時の削減効果の定量化 \\
+計画作成時間 & 手動計画と比較して約90\%短縮 \\
+作業負荷 & 担当者の負担軽減と属人化の解消 \\
+意思決定 & データに基づく客観的な判断が可能 \\
+\bottomrule
+\end{tabular}
+\end{table}

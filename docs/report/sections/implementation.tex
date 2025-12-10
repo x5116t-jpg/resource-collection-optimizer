@@ -1,0 +1,188 @@
+% 第4章 実装
+\section{実装}
+
+\subsection{最適化アルゴリズム}
+
+\subsubsection{問題定義}
+
+本システムで扱う最適化問題は、VRP（Vehicle Routing Problem）の変種である。
+問題の定式化を以下に示す。
+
+\textbf{目的関数：}
+\begin{equation}
+\min \quad \text{総コスト} = \sum_{v \in V} (\text{固定費}_v + \text{変動費}_v)
+\end{equation}
+
+\textbf{制約条件：}
+\begin{itemize}
+    \item 各回収地点を必ず1回訪問
+    \item 車両容量を超えない
+    \item 車庫から出発し、集積場所で終了
+    \item 資源と車種の適合性を満たす
+\end{itemize}
+
+\subsubsection{アルゴリズムの概要}
+
+本システムでは、以下のアプローチを採用した：
+
+\begin{enumerate}
+    \item \textbf{初期解生成}：近傍優先の貪欲法
+    \item \textbf{局所最適化}：2-opt法による改善
+    \item \textbf{車種選択}：コスト評価関数による最適化
+\end{enumerate}
+
+\textbf{計算量：} $O(N^2 \times M)$ （N: 地点数、M: 車種数）
+
+\subsubsection{貪欲法による初期解生成}
+
+\begin{lstlisting}[language=Python, caption=初期解生成アルゴリズム（疑似コード）]
+def generate_initial_solution(depot, pickup_points, sink):
+    route = [depot]
+    remaining = set(pickup_points)
+    current_load = 0
+
+    while remaining:
+        # 現在地から最も近い未訪問地点を選択
+        nearest = find_nearest(route[-1], remaining)
+
+        # 容量制約チェック
+        if current_load + nearest.demand <= capacity:
+            route.append(nearest)
+            current_load += nearest.demand
+            remaining.remove(nearest)
+        else:
+            break  # 容量オーバー
+
+    route.append(sink)
+    return route
+\end{lstlisting}
+
+\subsubsection{2-opt法による局所最適化}
+
+\begin{lstlisting}[language=Python, caption=2-opt法による改善（疑似コード）]
+def improve_by_2opt(route):
+    improved = True
+    while improved:
+        improved = False
+        for i in range(1, len(route) - 2):
+            for j in range(i + 1, len(route)):
+                # ルートの一部を反転
+                new_route = two_opt_swap(route, i, j)
+
+                # 改善されたか確認
+                if calculate_cost(new_route) < calculate_cost(route):
+                    route = new_route
+                    improved = True
+    return route
+\end{lstlisting}
+
+\subsection{コスト計算}
+
+\subsubsection{固定費の計算}
+
+固定費は、年間固定費をkm単価に換算して計算する：
+
+\begin{equation}
+\text{固定費} = \sum_{i=1}^{n} \frac{\text{年間固定費}_i}{\text{年間走行距離}} \times \text{実走行距離}
+\end{equation}
+
+固定費項目には、人件費、車両償却費、保険料、車検・点検費用等が含まれる。
+
+\subsubsection{変動費の計算}
+
+変動費は、距離単価を元に計算する：
+
+\begin{equation}
+\text{変動費} = \sum_{j=1}^{m} \text{単価}_j \times \text{実走行距離}
+\end{equation}
+
+変動費項目には、燃料費（または電気代）、タイヤ代、修繕費、消耗品費等が含まれる。
+
+\subsubsection{総コストの計算}
+
+\begin{equation}
+\text{総コスト} = \text{固定費} + \text{変動費}
+\end{equation}
+
+\subsubsection{エネルギー消費量の計算}
+
+EV（電気自動車）の場合のエネルギー消費量：
+
+\begin{equation}
+\text{消費電力量}[\text{kWh}] = \text{消費原単位}[\text{kWh/km}] \times \text{実走行距離}[\text{km}]
+\end{equation}
+
+\subsection{データ構造}
+
+\subsubsection{地点レジストリ}
+
+地点情報を管理するためのクラス構造：
+
+\begin{lstlisting}[language=Python, caption=地点レジストリの実装例]
+@dataclass
+class Point:
+    point_id: str
+    lat: float
+    lon: float
+    point_type: PointType  # DEPOT, PICKUP, SINK
+    demand: int = 0
+    resource_type: str = ""
+
+class PointRegistry:
+    def __init__(self):
+        self.points: Dict[str, Point] = {}
+
+    def add_point(self, point: Point):
+        self.points[point.point_id] = point
+
+    def get_pickups(self) -> List[Point]:
+        return [p for p in self.points.values()
+                if p.point_type == PointType.PICKUP]
+\end{lstlisting}
+
+\subsubsection{車種カタログ}
+
+車種情報を管理するためのクラス構造：
+
+\begin{lstlisting}[language=Python, caption=車種カタログの実装例]
+@dataclass
+class VehicleType:
+    name: str
+    capacity_kg: int
+    fixed_cost: float
+    per_km_cost: float
+    fixed_cost_per_km: float
+    energy_consumption_kwh_per_km: float
+
+class VehicleCatalog:
+    def __init__(self):
+        self.vehicles: List[VehicleType] = []
+
+    def add_vehicle(self, vehicle: VehicleType):
+        self.vehicles.append(vehicle)
+
+    def find_compatible(self, resource: str) -> List[VehicleType]:
+        # 適合性チェック
+        return [v for v in self.vehicles
+                if self.is_compatible(v, resource)]
+\end{lstlisting}
+
+\subsection{キャッシュ戦略}
+
+計算の高速化のため、以下のキャッシュ戦略を採用した：
+
+\begin{table}[H]
+\centering
+\caption{キャッシュ戦略}
+\label{tab:cache_strategy}
+\begin{tabular}{lp{6cm}p{4cm}}
+\toprule
+\textbf{対象} & \textbf{キャッシュ内容} & \textbf{効果} \\
+\midrule
+NetworkXグラフ & 道路ネットワーク全体 & 読み込み時間の削減 \\
+距離行列 & 地点間の最短距離 & 再計算の回避 \\
+空間インデックス & 座標の空間分割 & 最寄り検索の高速化 \\
+最短経路 & 計算済みの経路 & 経路再計算の回避 \\
+\bottomrule
+\end{tabular}
+\end{table}

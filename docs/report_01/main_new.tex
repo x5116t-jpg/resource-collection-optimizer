@@ -1,0 +1,127 @@
+% 地域交通計画立案ツール改良研究 - 報告書
+% コンパイル方法: platex main_new.tex (2回実行) → dvipdfmx main_new.dvi
+
+\documentclass[a4paper,12pt]{jsarticle}
+
+% パッケージの読み込み
+\usepackage[utf8]{inputenc}
+\usepackage[top=25mm,bottom=25mm,left=25mm,right=25mm]{geometry}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{here}
+\usepackage{subcaption}
+\usepackage{rotating}
+
+% ヘッダー・フッターの設定
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{受託報告書}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% コードリスティングの設定
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    backgroundcolor=\color{gray!10}
+}
+
+% セクションタイトルの設定
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+\titleformat{\paragraph}[hang]
+  {\normalfont\normalsize\bfseries}{}{0pt}{}
+\titleformat{\subparagraph}[hang]
+  {\normalfont\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\paragraph}{0pt}{3.25ex plus 1ex minus .2ex}{1em}
+
+% 目次の深さ設定
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{4}
+
+% ハイパーリンクの設定（最後に読み込む）
+\usepackage[dvipdfmx,
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+]{hyperref}
+
+% ドキュメント情報
+\title{
+    \vspace{2cm}
+    {\Huge \textbf{地域交通計画立案ツールを改良した}} \\
+    \vspace{0.5cm}
+    {\Huge \textbf{群馬県内の未利用資源運搬等に関する}} \\
+    \vspace{0.5cm}
+    {\Huge \textbf{基礎的研究}} \\
+    \vspace{1cm}
+    {\Large 受託研究報告書} \\
+    \vspace{2cm}
+}
+
+\author{
+    独立行政法人自動車技術総合機構 \\
+    交通安全環境研究所 \\
+    \vspace{0.5cm}
+}
+
+\date{
+    令和8年2月 \\
+    \vspace{1cm}
+}
+
+% ドキュメント本体
+\begin{document}
+
+% タイトルページ
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+% 目次
+\tableofcontents
+\newpage
+
+% 図表目次
+\listoffigures
+\listoftables
+\newpage
+
+% 各章を読み込み
+\input{sections/introduction}
+\input{sections/system_overview}
+\input{sections/system_details}
+\input{sections/usage}
+\input{sections/conclusion}
+
+% 参考文献
+\input{sections/references}
+
+% 付録
+\appendix
+\input{sections/appendix}
+\input{sections/appendix_technical}
+
+\end{document}

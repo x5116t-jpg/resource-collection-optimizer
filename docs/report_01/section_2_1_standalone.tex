@@ -1,0 +1,50 @@
+\documentclass[12pt,a4paper]{jsarticle}
+
+% パッケージ読み込み
+\usepackage[utf8]{inputenc}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{here}
+\usepackage{float}
+\usepackage[top=25mm,bottom=25mm,left=25mm,right=25mm]{geometry}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{rotating}
+
+% paragraphとsubparagraphのフォーマット設定
+\renewcommand{\theparagraph}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}.\arabic{paragraph}}
+\renewcommand{\thesubparagraph}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}.\arabic{paragraph}.\arabic{subparagraph}}
+
+% ヘッダー・フッター設定
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{システム概要（修正版）}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{\textbf{システム概要（修正版）}}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{4}
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+
+% セクション番号を2.1から開始
+\setcounter{section}{1}
+
+\input{section_2_1_system_overview_modified.tex}
+
+\end{document}
