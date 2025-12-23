@@ -599,6 +599,98 @@ def _make_vehicle_type(record: Dict[str, object]) -> "VehicleType":
     )
 
 
+def _calculate_total_demand(pickup_inputs: Sequence[Dict[str, object]]) -> int:
+    total_kg = 0
+    for pickup in pickup_inputs:
+        qty = pickup.get("qty", 0)
+        try:
+            qty_value = int(qty or 0)
+        except (TypeError, ValueError):
+            qty_value = 0
+        if qty_value <= 0:
+            continue
+        total_kg += qty_value
+    return max(0, total_kg)
+
+
+def _extract_required_resources(pickup_inputs: Sequence[Dict[str, object]]) -> List[str]:
+    resources: set[str] = set()
+    for pickup in pickup_inputs:
+        kind = pickup.get("kind")
+        if not kind:
+            continue
+        resources.add(str(kind))
+    return sorted(resources)
+
+
+def _filter_by_resource_compatibility(
+    record_map: Dict[str, Dict[str, object]],
+    required_resources: Sequence[str],
+    master: Optional[ProcessedMasterData],
+) -> List[Dict[str, object]]:
+    compatible: List[Dict[str, object]] = []
+    for name, record in record_map.items():
+        if all(_vehicle_supports_resource(name, res, master) for res in required_resources):
+            compatible.append(record)
+    return compatible
+
+
+def _filter_by_capacity(
+    candidates: Sequence[Dict[str, object]],
+    total_demand_kg: int,
+) -> List[Dict[str, object]]:
+    capacity_ok: List[Dict[str, object]] = []
+    for record in candidates:
+        try:
+            capacity = int(record.get("capacity_kg", 0) or 0)
+        except (TypeError, ValueError):
+            capacity = 0
+        if capacity >= total_demand_kg:
+            capacity_ok.append(record)
+    return capacity_ok
+
+
+def _select_best_vehicle(candidates: Sequence[Dict[str, object]]) -> Dict[str, object]:
+    return min(candidates, key=_vehicle_cost_score)
+
+
+def _generate_error_messages(
+    compatible_candidates: Sequence[Dict[str, object]],
+    total_demand_kg: int,
+    required_resources: Sequence[str],
+) -> List[str]:
+    warnings: List[str] = []
+    if not compatible_candidates:
+        resources_str = "、".join(required_resources) or "未指定"
+        warnings.append(
+            f"資源種別 [{resources_str}] に対応できる車種が見つかりません。"
+        )
+        warnings.append("💡 ヒント: 車種候補の設定またはマスタデータを確認してください。")
+        return warnings
+
+    max_capacity = max(
+        int(rec.get("capacity_kg", 0) or 0) for rec in compatible_candidates
+    )
+    shortage = max(0, total_demand_kg - max_capacity)
+    warnings.append(
+        f"総重量 {total_demand_kg}kg を運搬できる車種が見つかりません。"
+    )
+    warnings.append(f"💡 最大容量: {max_capacity}kg（不足: {shortage}kg）")
+
+    sorted_vehicles = sorted(
+        compatible_candidates,
+        key=lambda x: int(x.get("capacity_kg", 0) or 0),
+        reverse=True,
+    )
+    vehicle_info = ", ".join(
+        f"{rec.get('name', '')}({rec.get('capacity_kg', 0)}kg)"
+        for rec in sorted_vehicles[:5]
+    )
+    if vehicle_info:
+        warnings.append(f"対応可能な車両: {vehicle_info}")
+    return warnings
+
+
 def _plan_vehicle_allocations(
     records: List[Dict[str, object]],
     master: Optional[ProcessedMasterData],
@@ -607,14 +699,9 @@ def _plan_vehicle_allocations(
     if not pickup_inputs:
         return [], []
 
-    resource_to_pickups: Dict[str, Dict[str, Dict[str, object]]] = {}
-    for pickup in pickup_inputs:
-        resource = str(pickup.get("kind") or "")
-        if resource not in resource_to_pickups:
-            resource_to_pickups[resource] = {}
-        resource_to_pickups[resource][pickup["id"]] = pickup
+    total_demand_kg = _calculate_total_demand(pickup_inputs)
+    required_resources = _extract_required_resources(pickup_inputs)
 
-    required_resources = [res for res in resource_to_pickups.keys() if res]
     record_map: Dict[str, Dict[str, object]] = {}
     for record in records:
         name = str(record.get("name") or "").strip()
@@ -625,71 +712,29 @@ def _plan_vehicle_allocations(
     if not record_map:
         return [], ["利用可能な車種が設定されていません。"]
 
-    plan: List[Dict[str, object]] = []
-    warnings: List[str] = []
-
-    single_candidates: List[Dict[str, object]] = []
-    for name, record in record_map.items():
-        if all(_vehicle_supports_resource(name, res, master) for res in required_resources):
-            single_candidates.append(record)
-
-    if single_candidates:
-        best = min(single_candidates, key=_vehicle_cost_score)
-        plan.append(
-            {
-                "vehicle": str(best.get("name") or ""),
-                "record": best,
-                "resources": sorted(required_resources),
-                "pickups": list(pickup_inputs),
-            }
+    compatible_candidates = _filter_by_resource_compatibility(
+        record_map, required_resources, master
+    )
+    if compatible_candidates:
+        capacity_ok_candidates = _filter_by_capacity(
+            compatible_candidates, total_demand_kg
         )
-        return plan, warnings
+        if capacity_ok_candidates:
+            best_vehicle = _select_best_vehicle(capacity_ok_candidates)
+            plan = [
+                {
+                    "vehicle": str(best_vehicle.get("name") or ""),
+                    "record": best_vehicle,
+                    "resources": sorted(required_resources),
+                    "pickups": list(pickup_inputs),
+                }
+            ]
+            return plan, []
 
-    coverage: Dict[str, Dict[str, object]] = {}
-    covered_resources: set[str] = set()
-
-    for resource in required_resources:
-        candidates = [rec for name, rec in record_map.items() if _vehicle_supports_resource(name, resource, master)]
-        if not candidates:
-            warnings.append(f"資源 '{resource}' に対応できる車種が見つかりません。")
-            continue
-        best = min(candidates, key=_vehicle_cost_score)
-        name = str(best.get("name") or "")
-        entry = coverage.setdefault(
-            name,
-            {
-                "vehicle": name,
-                "record": best,
-                "resources": set(),
-                "pickup_map": {},
-            },
-        )
-        entry["resources"].add(resource)
-        for pickup in resource_to_pickups.get(resource, {}).values():
-            entry["pickup_map"][pickup["id"]] = pickup
-        covered_resources.add(resource)
-
-    missing_resources = [res for res in required_resources if res not in covered_resources]
-    if missing_resources:
-        warnings.append(
-            "未割当の資源: " + ", ".join(sorted(missing_resources))
-        )
-        return [], warnings
-
-    for entry in coverage.values():
-        plan.append(
-            {
-                "vehicle": entry["vehicle"],
-                "record": entry["record"],
-                "resources": sorted(entry["resources"]),
-                "pickups": list(entry["pickup_map"].values()),
-            }
-        )
-
-    if not plan:
-        warnings.append("資源割当プランの生成に失敗しました。")
-
-    return plan, warnings
+    warnings = _generate_error_messages(
+        compatible_candidates, total_demand_kg, required_resources
+    )
+    return [], warnings
 
 
 def _build_point_registry(graph, depot: str, sink: str, pickups: List[Dict[str, object]]) -> PointRegistry:
@@ -1404,6 +1449,7 @@ def main() -> None:
     st.title("資源回収ルート最適化ツール")
     processed_master = load_processed_master_cached()
     _init_session_state(processed_master)
+    st.session_state["processed_master"] = processed_master
     _detect_abandoned_pickup_dialog()
     _process_pickup_dialog_result()
 

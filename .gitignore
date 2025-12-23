@@ -49,6 +49,7 @@ htmlcov/
 # Project specific
 claudedocs/
 .claude/
+docs/
 test_*.py
 clear_session.py
 hook-*.py
@@ -56,6 +57,8 @@ install_pyinstaller.bat
 build_standalone.bat
 run_app_standalone.py
 recreate_venv_windows.bat
+QR_*.png
+QR_*.xbb
 
 # LaTeX temporary files
 *.aux
