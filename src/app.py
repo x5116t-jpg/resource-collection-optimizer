@@ -1371,10 +1371,6 @@ def _display_fleet_solution(
     else:  # pragma: no cover
         st.write(breakdown_rows)
 
-    # フリート全体の詳細コスト内訳表示（集計データ）
-    if fleet_solution.routes:
-        _display_detailed_cost_breakdown(fleet_solution.cost_breakdown, "フリート全体")
-
     plan_lookup: Dict[str, Dict[str, object]] = {}
     if plan_summary and isinstance(plan_summary, Sequence):
         plan_lookup = {
