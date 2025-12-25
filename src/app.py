@@ -623,6 +623,48 @@ def _extract_required_resources(pickup_inputs: Sequence[Dict[str, object]]) -> L
     return sorted(resources)
 
 
+def _group_pickups_by_resource(
+    pickup_inputs: Sequence[Dict[str, object]]
+) -> Dict[str, List[Dict[str, object]]]:
+    """ピックアップを資源種別ごとにグループ化"""
+    groups: Dict[str, List[Dict[str, object]]] = {}
+    for pickup in pickup_inputs:
+        resource = str(pickup.get("kind", ""))
+        if not resource:
+            continue
+        if resource not in groups:
+            groups[resource] = []
+        groups[resource].append(pickup)
+    return groups
+
+
+def _select_vehicle_for_resource(
+    resource: str,
+    pickups: List[Dict[str, object]],
+    record_map: Dict[str, Dict[str, object]],
+    master: Optional[ProcessedMasterData]
+) -> Optional[Dict[str, object]]:
+    """特定資源種別に対応する最適車両を選択"""
+    total_demand = _calculate_total_demand(pickups)
+
+    # この資源をサポートする車両のみフィルタ
+    compatible = [
+        record for name, record in record_map.items()
+        if _vehicle_supports_resource(name, resource, master)
+    ]
+
+    if not compatible:
+        return None
+
+    # 容量チェック
+    capacity_ok = _filter_by_capacity(compatible, total_demand)
+
+    if not capacity_ok:
+        return None
+
+    return _select_best_vehicle(capacity_ok)
+
+
 def _filter_by_resource_compatibility(
     record_map: Dict[str, Dict[str, object]],
     required_resources: Sequence[str],
@@ -696,11 +738,20 @@ def _plan_vehicle_allocations(
     master: Optional[ProcessedMasterData],
     pickup_inputs: Sequence[Dict[str, object]],
 ) -> Tuple[List[Dict[str, object]], List[str]]:
+    """
+    複数車両での割り当て計画を作成
+
+    資源種別ごとにピックアップをグループ化し、各資源に最適な車両を割り当てます。
+    これにより、異なる資源種別を複数の専用車両で運搬できるようになります。
+    """
     if not pickup_inputs:
         return [], []
 
-    total_demand_kg = _calculate_total_demand(pickup_inputs)
-    required_resources = _extract_required_resources(pickup_inputs)
+    # 資源種別でグループ化
+    resource_groups = _group_pickups_by_resource(pickup_inputs)
+
+    if not resource_groups:
+        return [], ["資源種別が指定されていません。"]
 
     record_map: Dict[str, Dict[str, object]] = {}
     for record in records:
@@ -712,29 +763,51 @@ def _plan_vehicle_allocations(
     if not record_map:
         return [], ["利用可能な車種が設定されていません。"]
 
-    compatible_candidates = _filter_by_resource_compatibility(
-        record_map, required_resources, master
-    )
-    if compatible_candidates:
-        capacity_ok_candidates = _filter_by_capacity(
-            compatible_candidates, total_demand_kg
-        )
-        if capacity_ok_candidates:
-            best_vehicle = _select_best_vehicle(capacity_ok_candidates)
-            plan = [
-                {
-                    "vehicle": str(best_vehicle.get("name") or ""),
-                    "record": best_vehicle,
-                    "resources": sorted(required_resources),
-                    "pickups": list(pickup_inputs),
-                }
-            ]
-            return plan, []
+    plan: List[Dict[str, object]] = []
+    warnings: List[str] = []
 
-    warnings = _generate_error_messages(
-        compatible_candidates, total_demand_kg, required_resources
-    )
-    return [], warnings
+    # 各資源種別に最適車両を割り当て
+    for resource, pickups in sorted(resource_groups.items()):
+        vehicle = _select_vehicle_for_resource(resource, pickups, record_map, master)
+
+        if vehicle is None:
+            total_demand = _calculate_total_demand(pickups)
+
+            # この資源をサポートする車両を探す
+            compatible = [
+                record for name, record in record_map.items()
+                if _vehicle_supports_resource(name, resource, master)
+            ]
+
+            if not compatible:
+                warnings.append(
+                    f"資源種別 [{resource}] に対応できる車両が見つかりません。"
+                )
+            else:
+                max_capacity = max(
+                    int(rec.get("capacity_kg", 0) or 0) for rec in compatible
+                )
+                shortage = max(0, total_demand - max_capacity)
+                warnings.append(
+                    f"資源種別 [{resource}] の総重量 {total_demand}kg を運搬できる車両が見つかりません。"
+                )
+                warnings.append(f"💡 最大容量: {max_capacity}kg（不足: {shortage}kg）")
+            continue
+
+        plan.append({
+            "vehicle": str(vehicle.get("name", "")),
+            "record": vehicle,
+            "resources": [resource],
+            "pickups": pickups,
+        })
+
+    if not plan and not warnings:
+        warnings.append("車両の割り当てができませんでした。")
+
+    if warnings:
+        warnings.append("💡 ヒント: 車種候補の設定またはマスタデータを確認してください。")
+
+    return plan, warnings
 
 
 def _build_point_registry(graph, depot: str, sink: str, pickups: List[Dict[str, object]]) -> PointRegistry:
