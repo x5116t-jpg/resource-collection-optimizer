@@ -1604,6 +1604,48 @@ def _display_comparison_results(
             "eCOM-10 での運搬が可能になります"
         )
 
+    # 元の詳細表示を追加
+    st.markdown("---")
+    st.markdown("## 📋 最適化結果の詳細")
+
+    # コスト内訳テーブル
+    st.markdown("### 💰 コスト内訳（最適解）")
+    breakdown_rows = [
+        {"項目": "固定費", "金額": optimal_solution.cost_breakdown.get("fixed_cost", 0.0)},
+        {"項目": "距離費", "金額": optimal_solution.cost_breakdown.get("distance_cost", 0.0)},
+        {"項目": "総額", "金額": optimal_solution.cost_breakdown.get("total_cost", 0.0)},
+    ]
+    if pd is not None:
+        st.table(pd.DataFrame(breakdown_rows))
+    else:
+        st.write(breakdown_rows)
+
+    # 各車両ごとのルート詳細
+    st.markdown("### 🚗 各車両のルート詳細")
+    plan_lookup: Dict[str, Dict[str, object]] = {}
+    if plan_summary and isinstance(plan_summary, Sequence):
+        plan_lookup = {
+            str(entry.get("vehicle")): entry for entry in plan_summary if isinstance(entry, dict)
+        }
+
+    for idx, route in enumerate(optimal_solution.routes, start=1):
+        entry = plan_lookup.get(route.vehicle.name)
+        st.subheader(f"車両 {idx}: {route.vehicle.name}")
+        if entry:
+            resources = entry.get("resources") or []
+            if resources:
+                st.caption(f"対応資源: {', '.join(resources)}")
+            pickup_ids = entry.get("pickup_ids") or []
+            if pickup_ids:
+                st.caption(f"対象ノード: {', '.join(str(pid) for pid in pickup_ids)}")
+        _display_single_solution(
+            graph,
+            route.solution,
+            show_banner=False,
+            label_prefix=f"車両{idx} ",
+            show_vehicle_info=False,
+        )
+
 
 def check_password() -> bool:
     """パスワード認証を行います。正しいパスワードが入力された場合はTrueを返します。"""
