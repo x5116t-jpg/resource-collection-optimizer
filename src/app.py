@@ -44,6 +44,11 @@ from services import (
 from services.master_repository import VehicleCandidate
 from services.route_reconstruction import reconstruct_paths
 from services.spatial_index import SpatialIndex
+from services.ecom10_comparison import (
+    compute_ecom10_alternative,
+    find_alternative_vehicles,
+    eCOM10CompatibilityResult,
+)
 
 try:  # pandas is optional but improves the UI
     import pandas as pd  # type: ignore
@@ -1469,6 +1474,137 @@ def _display_fleet_solution(
         )
 
 
+def _display_comparison_results(
+    graph,
+    optimal_solution: FleetSolution,
+    ecom10_solution,
+    compatibility_result: eCOM10CompatibilityResult,
+    plan_summary: Optional[Sequence[Dict[str, object]]] = None,
+) -> None:
+    """最適解と eCOM-10 代替案を並列表示"""
+    st.markdown("## 📊 最適化結果の比較")
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+
+    # 左カラム: 最適解
+    with col1:
+        st.markdown("### 🏆 最適解（推奨）")
+        st.metric("総距離 (km)", f"{optimal_solution.total_distance_m / 1000:.2f}")
+        st.metric("総コスト (円)", f"{optimal_solution.cost_breakdown.get('total_cost', 0):,.0f}")
+
+        energy_kwh = optimal_solution.cost_breakdown.get('energy_consumption_kwh')
+        if energy_kwh:
+            st.metric("エネルギー消費 (kWh)", f"{energy_kwh:.2f}")
+
+        # 車両構成
+        st.markdown("**📋 車両構成:**")
+        for idx, route in enumerate(optimal_solution.routes, start=1):
+            st.write(f"・{route.vehicle.name}")
+
+    # 右カラム: eCOM-10 代替案
+    with col2:
+        st.markdown("### 🚐 eCOM-10 利用の場合")
+
+        if isinstance(ecom10_solution, NoSolution):
+            # 解なしの場合
+            st.error("❌ eCOM-10 による運搬は不可能です")
+            st.write(ecom10_solution.message)
+
+            # 非適合資源の詳細表示
+            if compatibility_result.incompatible_pickups:
+                st.markdown("**以下の資源はeCOM-10では運搬できません:**")
+                processed_master = st.session_state.get("processed_master")
+
+                for pickup in compatibility_result.incompatible_pickups:
+                    resource_type = pickup.get("kind", "不明")
+                    quantity = pickup.get("qty", 0)
+
+                    # 代替車両の提案
+                    if processed_master:
+                        alternatives = find_alternative_vehicles(
+                            resource_type, quantity, processed_master
+                        )
+                        st.warning(
+                            f"**❌ {resource_type}** ({quantity}kg)\n\n"
+                            f"代替車両: {', '.join(alternatives)}"
+                        )
+                    else:
+                        st.warning(f"**❌ {resource_type}** ({quantity}kg)")
+
+        else:
+            # 解ありの場合
+            distance_diff = ecom10_solution.total_distance_m - optimal_solution.total_distance_m
+            cost_diff = ecom10_solution.cost_breakdown.get('total_cost', 0) - optimal_solution.cost_breakdown.get('total_cost', 0)
+
+            st.metric(
+                "総距離 (km)",
+                f"{ecom10_solution.total_distance_m / 1000:.2f}",
+                delta=f"{distance_diff / 1000:+.2f} km"
+            )
+
+            # コスト差分（削減の場合は緑、増加の場合は赤）
+            cost_percent = (cost_diff / optimal_solution.cost_breakdown.get('total_cost', 1) * 100) if optimal_solution.cost_breakdown.get('total_cost', 0) > 0 else 0
+            st.metric(
+                "総コスト (円)",
+                f"{ecom10_solution.cost_breakdown.get('total_cost', 0):,.0f}",
+                delta=f"{cost_diff:+,.0f} 円 ({cost_percent:+.1f}%)",
+                delta_color="inverse"  # 減少が良い
+            )
+
+            # エネルギー差分
+            ecom10_energy = ecom10_solution.cost_breakdown.get('energy_consumption_kwh')
+            optimal_energy = optimal_solution.cost_breakdown.get('energy_consumption_kwh')
+
+            if ecom10_energy is not None and optimal_energy is not None:
+                energy_diff = ecom10_energy - optimal_energy
+                energy_percent = (energy_diff / optimal_energy * 100) if optimal_energy > 0 else 0
+                st.metric(
+                    "エネルギー消費 (kWh)",
+                    f"{ecom10_energy:.2f}",
+                    delta=f"{energy_diff:+.2f} kWh ({energy_percent:+.1f}%)",
+                    delta_color="inverse"
+                )
+
+                # CO2 削減効果の表示
+                if energy_diff < 0:
+                    st.success(f"🌱 CO₂削減効果: {abs(energy_diff):.2f} kWh 相当")
+
+            # 車両構成
+            st.markdown("**📋 車両構成:**")
+            for idx, route in enumerate(ecom10_solution.routes, start=1):
+                st.write(f"・{route.vehicle.name}")
+
+            # 警告・制約情報
+            if compatibility_result.warnings:
+                st.markdown("**⚠️ 制約事項:**")
+                for warning in compatibility_result.warnings:
+                    if "💡" in warning:
+                        st.info(warning)
+                    else:
+                        st.warning(warning)
+
+    # 推奨メッセージ
+    st.markdown("---")
+    if isinstance(ecom10_solution, FleetSolution):
+        cost_saving = optimal_solution.cost_breakdown.get('total_cost', 0) - ecom10_solution.cost_breakdown.get('total_cost', 0)
+        if cost_saving > 0:
+            st.success(
+                f"💡 **推奨**: 短距離・軽量資源の場合、eCOM-10 で "
+                f"約 {cost_saving:,.0f} 円のコスト削減と CO₂ 削減効果が期待できます"
+            )
+        else:
+            st.info(
+                "💡 **推奨**: 最適解の方がコスト面で有利です。"
+                "ただし、環境負荷低減を重視する場合は eCOM-10 も検討価値があります"
+            )
+    else:
+        st.info(
+            "💡 **代替案**: 軽量資源（林業残材、古紙等）に変更することで "
+            "eCOM-10 での運搬が可能になります"
+        )
+
+
 def check_password() -> bool:
     """パスワード認証を行います。正しいパスワードが入力された場合はTrueを返します。"""
 
@@ -1919,6 +2055,48 @@ def main() -> None:
             with st.spinner("最適化を実行中..."):
                 result = solve_fleet_routing(distance_matrix, depot_id, sink_id, assignments, vehicle_metadata_map)
 
+            # eCOM-10 代替案の計算
+            ecom10_result = None
+            ecom10_compatibility = None
+            if isinstance(result, FleetSolution) and processed_master:
+                with st.spinner("eCOM-10 代替案を計算中..."):
+                    # eCOM-10 車両を取得
+                    ecom10_vehicle = None
+                    other_vehicles = []
+
+                    for candidate in processed_master.vehicles:
+                        if candidate.name == "eCOM-10":
+                            # VehicleType を作成
+                            from services.vehicle_catalog import VehicleType
+                            ecom10_vehicle = VehicleType(
+                                name=candidate.name,
+                                capacity_kg=candidate.capacity_kg,
+                                fixed_cost=candidate.annual_fixed_cost / candidate.annual_distance_km if candidate.annual_distance_km > 0 else 0,
+                                per_km_cost=candidate.variable_cost_per_km,
+                            )
+                        else:
+                            from services.vehicle_catalog import VehicleType
+                            other_vehicles.append(
+                                VehicleType(
+                                    name=candidate.name,
+                                    capacity_kg=candidate.capacity_kg,
+                                    fixed_cost=candidate.annual_fixed_cost / candidate.annual_distance_km if candidate.annual_distance_km > 0 else 0,
+                                    per_km_cost=candidate.variable_cost_per_km,
+                                )
+                            )
+
+                    if ecom10_vehicle and other_vehicles:
+                        ecom10_result, ecom10_compatibility = compute_ecom10_alternative(
+                            distance_matrix=distance_matrix,
+                            depot=depot_id,
+                            sink=sink_id,
+                            pickup_inputs=pickup_inputs,
+                            ecom10_vehicle=ecom10_vehicle,
+                            other_vehicles=other_vehicles,
+                            master=processed_master,
+                            vehicle_metadata_map=vehicle_metadata_map,
+                        )
+
             # ステップ4: 完了
             progress_bar.progress(100)
             status_text.text("✅ 完了しました！")
@@ -1932,6 +2110,8 @@ def main() -> None:
                     "solution": result,
                     "points": [asdict(point) for point in registry.list_points()],
                     "plan": plan_summary,
+                    "ecom10_solution": ecom10_result,
+                    "ecom10_compatibility": ecom10_compatibility,
                 }
 
         finally:
@@ -1946,8 +2126,22 @@ def main() -> None:
     if stored_solution:
         solution_obj = stored_solution.get("solution")
         plan_summary = stored_solution.get("plan")
+        ecom10_solution = stored_solution.get("ecom10_solution")
+        ecom10_compatibility = stored_solution.get("ecom10_compatibility")
+
         if isinstance(solution_obj, FleetSolution):
-            _display_fleet_solution(graph, solution_obj, plan_summary)
+            # eCOM-10 比較結果がある場合は比較表示
+            if ecom10_solution is not None and ecom10_compatibility is not None:
+                _display_comparison_results(
+                    graph,
+                    solution_obj,
+                    ecom10_solution,
+                    ecom10_compatibility,
+                    plan_summary
+                )
+            else:
+                # 通常の表示
+                _display_fleet_solution(graph, solution_obj, plan_summary)
         elif isinstance(solution_obj, Solution):
             _display_single_solution(graph, solution_obj)
 
