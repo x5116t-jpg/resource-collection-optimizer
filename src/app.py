@@ -604,6 +604,33 @@ def _make_vehicle_type(record: Dict[str, object]) -> "VehicleType":
     )
 
 
+def _vehicle_candidate_to_dict(candidate: "VehicleCandidate") -> Dict[str, object]:
+    """
+    VehicleCandidateをVehicleType生成用のDict形式に変換
+
+    Args:
+        candidate: VehicleCandidateオブジェクト
+
+    Returns:
+        _make_vehicle_type関数用のDict
+    """
+    # 固定費を走行距離で按分 (年間固定費を年間走行距離で割る)
+    fixed_cost = (
+        candidate.annual_fixed_cost / candidate.annual_distance_km
+        if candidate.annual_distance_km and candidate.annual_distance_km > 0
+        else 0.0
+    )
+
+    return {
+        "name": candidate.name,
+        "capacity_kg": candidate.capacity_kg,
+        "fixed_cost": fixed_cost,
+        "per_km_cost": candidate.variable_cost_per_km or 0.0,
+        "fixed_cost_per_km": candidate.fixed_cost_per_km or 0.0,
+        "energy_consumption_kwh_per_km": candidate.energy_consumption_kwh_per_km or 0.0,
+    }
+
+
 def _calculate_total_demand(pickup_inputs: Sequence[Dict[str, object]]) -> int:
     total_kg = 0
     for pickup in pickup_inputs:
@@ -2107,25 +2134,14 @@ def main() -> None:
                     other_vehicles = []
 
                     for candidate in processed_master.vehicles:
+                        # VehicleCandidateをDict形式に変換してからVehicleTypeを生成
+                        vehicle_dict = _vehicle_candidate_to_dict(candidate)
+                        vehicle_type = _make_vehicle_type(vehicle_dict)
+
                         if candidate.name == "eCOM-10":
-                            # VehicleType を作成
-                            from services.vehicle_catalog import VehicleType
-                            ecom10_vehicle = VehicleType(
-                                name=candidate.name,
-                                capacity_kg=candidate.capacity_kg,
-                                fixed_cost=candidate.annual_fixed_cost / candidate.annual_distance_km if candidate.annual_distance_km > 0 else 0,
-                                per_km_cost=candidate.variable_cost_per_km,
-                            )
+                            ecom10_vehicle = vehicle_type
                         else:
-                            from services.vehicle_catalog import VehicleType
-                            other_vehicles.append(
-                                VehicleType(
-                                    name=candidate.name,
-                                    capacity_kg=candidate.capacity_kg,
-                                    fixed_cost=candidate.annual_fixed_cost / candidate.annual_distance_km if candidate.annual_distance_km > 0 else 0,
-                                    per_km_cost=candidate.variable_cost_per_km,
-                                )
-                            )
+                            other_vehicles.append(vehicle_type)
 
                     if ecom10_vehicle and other_vehicles:
                         ecom10_result, ecom10_compatibility = compute_ecom10_alternative(
