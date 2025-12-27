@@ -1647,6 +1647,19 @@ def _display_comparison_results(
     else:
         st.write(breakdown_rows)
 
+    # コスト内訳テーブル（eCOM-10）
+    if isinstance(ecom10_solution, FleetSolution):
+        st.markdown("### 💰 コスト内訳（eCOM-10）")
+        ecom10_breakdown_rows = [
+            {"項目": "固定費", "金額": ecom10_solution.cost_breakdown.get("fixed_cost", 0.0)},
+            {"項目": "距離費", "金額": ecom10_solution.cost_breakdown.get("distance_cost", 0.0)},
+            {"項目": "総額", "金額": ecom10_solution.cost_breakdown.get("total_cost", 0.0)},
+        ]
+        if pd is not None:
+            st.table(pd.DataFrame(ecom10_breakdown_rows))
+        else:
+            st.write(ecom10_breakdown_rows)
+
     # 各車両ごとのルート詳細
     st.markdown("### 🚗 各車両のルート詳細")
     plan_lookup: Dict[str, Dict[str, object]] = {}
