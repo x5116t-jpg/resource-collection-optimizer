@@ -1660,6 +1660,15 @@ def _display_comparison_results(
         else:
             st.write(ecom10_breakdown_rows)
 
+        # コスト詳細内訳（eCOM-10）
+        # eCOM-10は通常単一車両なので、routes[0]のcost_breakdownを使用
+        if ecom10_solution.routes:
+            first_route = ecom10_solution.routes[0]
+            _display_detailed_cost_breakdown(
+                first_route.solution.cost_breakdown,
+                first_route.vehicle.name
+            )
+
     # 各車両ごとのルート詳細
     st.markdown("### 🚗 各車両のルート詳細")
     plan_lookup: Dict[str, Dict[str, object]] = {}
