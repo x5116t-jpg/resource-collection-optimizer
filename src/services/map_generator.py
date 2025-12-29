@@ -133,7 +133,10 @@ class MapGenerator:
         Returns:
             folium.Map object
         """
-        from .route_reconstruction import reconstruct_paths
+        try:
+            from .route_reconstruction import reconstruct_paths
+        except ImportError:
+            from services.route_reconstruction import reconstruct_paths
 
         config = self.config.get("map_settings", {}).get("route_map", {})
 
@@ -197,7 +200,10 @@ class MapGenerator:
             save_html: Whether to save HTML version
             save_image: Whether to save image version
         """
-        from ..utils.html_to_image import convert_html_to_png
+        try:
+            from ..utils.html_to_image import convert_html_to_png
+        except ImportError:
+            from utils.html_to_image import convert_html_to_png
 
         # Save HTML
         if save_html:

@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from .map_generator import MapGenerator
 from .latex_generator import LaTeXGenerator
@@ -51,7 +51,7 @@ class ReportExporter:
         self.map_generator = MapGenerator(self.config_manager)
         self.latex_generator = LaTeXGenerator(self.config_manager)
 
-    def export(self, input_data: ReportExportInput) -> Path:
+    def export(self, input_data: ReportExportInput) -> Tuple[Path, List[str]]:
         """
         Export report data to structured files.
 
@@ -59,14 +59,18 @@ class ReportExporter:
             input_data: Report export input data
 
         Returns:
-            Path to output directory
+            Tuple of (output directory path, list of warning/error messages)
         """
+        messages = []
+
         # Create directories
         self._create_directories()
 
         # Validate configuration
         if not self.config_manager.validate():
-            print("Warning: Configuration validation failed, using defaults")
+            msg = "Warning: Configuration validation failed, using defaults"
+            print(msg)
+            messages.append(msg)
 
         # Export JSON data
         json_path = self._export_json(input_data)
@@ -74,23 +78,33 @@ class ReportExporter:
 
         # Export maps
         try:
-            self._export_maps(input_data)
+            map_messages = self._export_maps(input_data)
+            messages.extend(map_messages)
             print(f"✓ Maps exported to: {self.output_dir / 'maps'}")
         except Exception as e:
-            print(f"Warning: Map export failed: {e}")
+            import traceback
+            msg = f"Error: Map export failed: {e}"
+            print(msg)
+            traceback.print_exc()
+            messages.append(msg)
+            messages.append(traceback.format_exc())
 
         # Export LaTeX
         try:
             self._export_latex(input_data)
             print(f"✓ LaTeX code exported to: {self.output_dir / 'latex'}")
         except Exception as e:
-            print(f"Warning: LaTeX export failed: {e}")
+            import traceback
+            msg = f"Warning: LaTeX export failed: {e}"
+            print(msg)
+            traceback.print_exc()
+            messages.append(msg)
 
         # Create README
         self._create_readme()
         print(f"✓ README created")
 
-        return self.output_dir
+        return self.output_dir, messages
 
     def _create_directories(self) -> None:
         """Create necessary directory structure."""
@@ -204,8 +218,10 @@ class ReportExporter:
             "route_polylines": all_polylines
         }
 
-    def _export_maps(self, input_data: ReportExportInput) -> None:
+    def _export_maps(self, input_data: ReportExportInput) -> List[str]:
         """Export map visualizations."""
+        import traceback
+        messages = []
         maps_dir = self.output_dir / "maps"
 
         # 1. Conditions map
@@ -221,8 +237,12 @@ class ReportExporter:
                 save_html=True,
                 save_image=True
             )
+            messages.append("✓ Conditions map created successfully")
         except Exception as e:
-            print(f"Warning: Failed to create conditions map: {e}")
+            msg = f"Warning: Failed to create conditions map: {e}"
+            print(msg)
+            traceback.print_exc()
+            messages.append(msg)
 
         # 2. Optimal route map
         try:
@@ -239,8 +259,13 @@ class ReportExporter:
                 save_html=True,
                 save_image=True
             )
+            messages.append("✓ Optimal route map created successfully")
         except Exception as e:
-            print(f"Warning: Failed to create optimal route map: {e}")
+            msg = f"Error: Failed to create optimal route map: {e}"
+            print(msg)
+            traceback.print_exc()
+            messages.append(msg)
+            messages.append(f"Details: {traceback.format_exc()}")
 
         # 3. eCOM-10 route map (if available)
         if input_data.ecom10_solution is not None and hasattr(input_data.ecom10_solution, 'routes'):
@@ -258,8 +283,14 @@ class ReportExporter:
                     save_html=True,
                     save_image=True
                 )
+                messages.append("✓ eCOM-10 route map created successfully")
             except Exception as e:
-                print(f"Warning: Failed to create eCOM-10 route map: {e}")
+                msg = f"Warning: Failed to create eCOM-10 route map: {e}"
+                print(msg)
+                traceback.print_exc()
+                messages.append(msg)
+
+        return messages
 
     def _export_latex(self, input_data: ReportExportInput) -> None:
         """Export LaTeX code."""

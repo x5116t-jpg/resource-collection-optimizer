@@ -1544,10 +1544,25 @@ def _export_report_data(
 
                 # Export
                 exporter = ReportExporter(output_dir=Path("claudedocs/report_export"))
-                output_dir = exporter.export(export_input)
+                output_dir, messages = exporter.export(export_input)
 
                 st.success(f"✅ 報告書用データを出力しました")
                 st.info(f"📁 出力先: `{output_dir}`")
+
+                # Display messages if any
+                if messages:
+                    with st.expander("📝 処理の詳細", expanded=True):
+                        for msg in messages:
+                            if msg.startswith("✓"):
+                                st.success(msg)
+                            elif msg.startswith("Warning:"):
+                                st.warning(msg)
+                            elif msg.startswith("Error:"):
+                                st.error(msg)
+                            elif "Traceback" in msg:
+                                st.code(msg, language="python")
+                            else:
+                                st.info(msg)
 
                 # Display instructions
                 st.markdown("#### 📋 次のステップ")
