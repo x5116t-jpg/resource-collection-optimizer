@@ -140,20 +140,18 @@ class MapGenerator:
 
         config = self.config.get("map_settings", {}).get("route_map", {})
 
-        # Collect all points
-        all_points = [depot, sink]
+        # Collect all points including route coordinates
+        all_coords = []
 
-        # Calculate center
-        center_lat, center_lon = self._calculate_center(all_points)
-
-        # Create map
+        # Create map with initial center
+        center_lat, center_lon = self._calculate_center([depot, sink])
         fmap = folium.Map(
             location=[center_lat, center_lon],
             zoom_start=config.get("zoom_start", 12),
             tiles=config.get("tile_layer", "OpenStreetMap")
         )
 
-        # Draw routes
+        # Draw routes and collect all coordinates
         route_color = config.get("route_color", "#0066CC")
         route_weight = config.get("route_weight", 4)
         route_opacity = config.get("route_opacity", 0.8)
@@ -162,6 +160,7 @@ class MapGenerator:
             polylines = reconstruct_paths(graph, route.solution.order)
             for segment in polylines:
                 if segment:
+                    # Add polyline to map
                     folium.PolyLine(
                         segment,
                         color=route_color,
@@ -169,6 +168,8 @@ class MapGenerator:
                         opacity=route_opacity,
                         popup=f"車両: {route.vehicle.name}"
                     ).add_to(fmap)
+                    # Collect all coordinates from this segment
+                    all_coords.extend(segment)
 
         # Add markers (depot, sink, pickups)
         colors = config.get("colors", self.config["map_settings"]["conditions_map"].get("colors", {}))
@@ -177,10 +178,15 @@ class MapGenerator:
         self._add_marker(fmap, depot, colors.get("depot", "green"), sizes.get("depot", 8), "depot", "車庫")
         self._add_marker(fmap, sink, colors.get("sink", "red"), sizes.get("sink", 8), "sink", "集積場所")
 
-        # Auto-zoom
-        if config.get("auto_zoom", True):
-            bounds = self._calculate_bounds(all_points)
-            fmap.fit_bounds(bounds)
+        # Auto-zoom to include all route coordinates
+        if config.get("auto_zoom", True) and all_coords:
+            # Calculate bounds from all route coordinates
+            lats = [coord[0] for coord in all_coords]
+            lons = [coord[1] for coord in all_coords]
+
+            if lats and lons:
+                bounds = [[min(lats), min(lons)], [max(lats), max(lons)]]
+                fmap.fit_bounds(bounds)
 
         return fmap
 
