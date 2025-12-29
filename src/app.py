@@ -2322,14 +2322,9 @@ def main() -> None:
                     processed_master = st.session_state.get("processed_master")
                     if processed_master and processed_master.vehicles:
                         for candidate in processed_master.vehicles:
-                            vehicles_data.append({
-                                "name": candidate.name,
-                                "capacity_kg": candidate.capacity_kg,
-                                "fixed_cost": candidate.fixed_cost,
-                                "per_km_cost": candidate.per_km_cost,
-                                "fixed_cost_per_km": candidate.fixed_cost_per_km,
-                                "energy_consumption_kwh_per_km": candidate.energy_consumption_kwh_per_km
-                            })
+                            # Convert VehicleCandidate to dict using existing helper function
+                            vehicle_dict = _vehicle_candidate_to_dict(candidate)
+                            vehicles_data.append(vehicle_dict)
 
                     _export_report_data(
                         graph=graph,
