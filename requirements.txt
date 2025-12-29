@@ -12,3 +12,6 @@ pandas>=1.3.0
 folium>=0.12.0
 streamlit-folium>=0.11.0
 branca>=0.6.0
+
+# Report generation (optional - for HTML to image conversion)
+playwright>=1.40.0

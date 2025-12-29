@@ -1501,6 +1501,69 @@ def _display_fleet_solution(
         )
 
 
+def _export_report_data(
+    graph,
+    optimal_solution: FleetSolution,
+    ecom10_solution,
+    compatibility_result: Optional[eCOM10CompatibilityResult],
+    depot_data: Dict,
+    sink_data: Dict,
+    pickups_data: List[Dict],
+    vehicles_data: List[Dict],
+    network_file: str
+) -> None:
+    """報告書用データをエクスポート"""
+    from pathlib import Path
+    from services.report_exporter import ReportExporter, ReportExportInput
+
+    st.markdown("---")
+    st.markdown("### 📄 報告書用データ出力")
+
+    user_note = st.text_input(
+        "メモ（任意）",
+        value="",
+        help="報告書に追加したいメモを入力してください"
+    )
+
+    if st.button("📄 報告書用データを出力", type="primary"):
+        with st.spinner("報告書用データを生成中..."):
+            try:
+                # Prepare export input
+                export_input = ReportExportInput(
+                    depot=depot_data,
+                    sink=sink_data,
+                    pickups=pickups_data,
+                    vehicles=vehicles_data,
+                    network_file=network_file,
+                    optimal_solution=optimal_solution,
+                    graph=graph,
+                    ecom10_solution=ecom10_solution,
+                    compatibility_result=compatibility_result,
+                    user_note=user_note
+                )
+
+                # Export
+                exporter = ReportExporter(output_dir=Path("claudedocs/report_export"))
+                output_dir = exporter.export(export_input)
+
+                st.success(f"✅ 報告書用データを出力しました")
+                st.info(f"📁 出力先: `{output_dir}`")
+
+                # Display instructions
+                st.markdown("#### 📋 次のステップ")
+                st.markdown("""
+1. **地図の確認**: `claudedocs/report_export/maps/*.html` をブラウザで開いて確認
+2. **設定調整**（必要に応じて）: `claudedocs/report_export/report_config.json` を編集
+3. **LaTeX統合**: `docs/report_04/main.tex` に結果セクションを追加
+
+詳細は `claudedocs/report_export/README.md` を参照してください。
+                """)
+
+            except Exception as e:
+                st.error(f"❌ エラーが発生しました: {str(e)}")
+                st.exception(e)
+
+
 def _display_comparison_results(
     graph,
     optimal_solution: FleetSolution,
@@ -2219,6 +2282,67 @@ def main() -> None:
                     ecom10_compatibility,
                     plan_summary
                 )
+
+                # 報告書出力ボタン
+                if depot_id and sink_id and pickup_inputs:
+                    # Prepare data for export
+                    depot_node = graph.nodes.get(depot_id, {})
+                    sink_node = graph.nodes.get(sink_id, {})
+
+                    depot_data = {
+                        "id": depot_id,
+                        "lat": depot_node.get("lat") or depot_node.get("y", 0),
+                        "lon": depot_node.get("lon") or depot_node.get("x", 0),
+                        "label": depot_node.get("name", depot_id)
+                    }
+
+                    sink_data = {
+                        "id": sink_id,
+                        "lat": sink_node.get("lat") or sink_node.get("y", 0),
+                        "lon": sink_node.get("lon") or sink_node.get("x", 0),
+                        "label": sink_node.get("name", sink_id)
+                    }
+
+                    pickups_data = []
+                    for pickup in pickup_inputs:
+                        node_id = pickup.get("id")
+                        if node_id:
+                            node = graph.nodes.get(node_id, {})
+                            pickups_data.append({
+                                "id": node_id,
+                                "lat": node.get("lat") or node.get("y", 0),
+                                "lon": node.get("lon") or node.get("x", 0),
+                                "label": node.get("name", node_id),
+                                "resource_type": pickup.get("kind", ""),
+                                "quantity_kg": pickup.get("qty", 0)
+                            })
+
+                    # Get vehicles data
+                    vehicles_data = []
+                    processed_master = st.session_state.get("processed_master")
+                    if processed_master and processed_master.vehicles:
+                        for candidate in processed_master.vehicles:
+                            vehicles_data.append({
+                                "name": candidate.name,
+                                "capacity_kg": candidate.capacity_kg,
+                                "fixed_cost": candidate.fixed_cost,
+                                "per_km_cost": candidate.per_km_cost,
+                                "fixed_cost_per_km": candidate.fixed_cost_per_km,
+                                "energy_consumption_kwh_per_km": candidate.energy_consumption_kwh_per_km
+                            })
+
+                    _export_report_data(
+                        graph=graph,
+                        optimal_solution=solution_obj,
+                        ecom10_solution=ecom10_solution,
+                        compatibility_result=ecom10_compatibility,
+                        depot_data=depot_data,
+                        sink_data=sink_data,
+                        pickups_data=pickups_data,
+                        vehicles_data=vehicles_data,
+                        network_file=str(selected_path.name)
+                    )
+
             else:
                 # 通常の表示
                 _display_fleet_solution(graph, solution_obj, plan_summary)
