@@ -190,7 +190,7 @@ class MapGenerator:
         output_path: Path,
         save_html: bool = True,
         save_image: bool = True
-    ) -> None:
+    ) -> Optional[str]:
         """
         Save map to HTML and/or image file.
 
@@ -199,6 +199,9 @@ class MapGenerator:
             output_path: Output path without extension
             save_html: Whether to save HTML version
             save_image: Whether to save image version
+
+        Returns:
+            Error message if PNG conversion fails, None otherwise
         """
         try:
             from ..utils.html_to_image import convert_html_to_png
@@ -224,17 +227,25 @@ class MapGenerator:
 
             width = config.get("width_px", 1200)
             height = config.get("height_px", 900)
+            wait_time = config.get("wait_time_ms", 3000)  # Default 3 seconds for route maps
 
             try:
                 convert_html_to_png(
                     str(html_path),
                     str(png_path),
                     width=width,
-                    height=height
+                    height=height,
+                    wait_time=wait_time
                 )
             except Exception as e:
-                print(f"Warning: Failed to convert HTML to PNG: {e}")
+                import traceback
+                error_msg = f"Failed to convert {output_path.name}.html to PNG: {e}"
+                print(f"Warning: {error_msg}")
                 print("HTML file saved, but PNG conversion skipped.")
+                traceback.print_exc()
+                return error_msg
+
+        return None
 
     def _add_marker(
         self,

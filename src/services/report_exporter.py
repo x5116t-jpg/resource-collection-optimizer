@@ -231,13 +231,16 @@ class ReportExporter:
                 sink=input_data.sink,
                 pickups=input_data.pickups
             )
-            self.map_generator.save_map(
+            error_msg = self.map_generator.save_map(
                 conditions_map,
                 maps_dir / "conditions",
                 save_html=True,
                 save_image=True
             )
-            messages.append("✓ Conditions map created successfully")
+            if error_msg:
+                messages.append(f"Warning: {error_msg}")
+            else:
+                messages.append("✓ Conditions map created successfully")
         except Exception as e:
             msg = f"Warning: Failed to create conditions map: {e}"
             print(msg)
@@ -253,13 +256,16 @@ class ReportExporter:
                 sink=input_data.sink,
                 title="最適ルート"
             )
-            self.map_generator.save_map(
+            error_msg = self.map_generator.save_map(
                 optimal_map,
                 maps_dir / "optimal_route",
                 save_html=True,
                 save_image=True
             )
-            messages.append("✓ Optimal route map created successfully")
+            if error_msg:
+                messages.append(f"Error: {error_msg}")
+            else:
+                messages.append("✓ Optimal route map created successfully")
         except Exception as e:
             msg = f"Error: Failed to create optimal route map: {e}"
             print(msg)
@@ -277,13 +283,16 @@ class ReportExporter:
                     sink=input_data.sink,
                     title="eCOM-10ルート"
                 )
-                self.map_generator.save_map(
+                error_msg = self.map_generator.save_map(
                     ecom10_map,
                     maps_dir / "ecom10_route",
                     save_html=True,
                     save_image=True
                 )
-                messages.append("✓ eCOM-10 route map created successfully")
+                if error_msg:
+                    messages.append(f"Warning: {error_msg}")
+                else:
+                    messages.append("✓ eCOM-10 route map created successfully")
             except Exception as e:
                 msg = f"Warning: Failed to create eCOM-10 route map: {e}"
                 print(msg)
