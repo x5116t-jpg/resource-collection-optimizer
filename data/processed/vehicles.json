@@ -9,15 +9,11 @@
       "fuel_efficiency_km_per_l": 14.5,
       "energy_consumption_kwh_per_km": 0.607,
       "annual_distance_km": 20000.0,
-      "variable_cost_per_km": 252.5,
+      "variable_cost_per_km": 18.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 12.0,
-        "運転手人件費_円_per_km": 47.0,
         "タイヤ交換費_円_per_km": 2.0,
         "修理費_円_per_km": 4.0,
-        "作業時間人件費_15km_円_per_km": 100.0,
-        "作業時間人件費_30km_円_per_km": 50.0,
-        "作業時間人件費_40km_円_per_km": 37.5,
         "補助員人件費_円_per_km": 0.0
       },
       "annual_fixed_cost": 291000.0,
@@ -69,7 +65,10 @@
         "社会保険料_万円_per_年": "80-120",
         "年間走行距離_km": "20000",
         "備考": "1名体制"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "2t平ボディ",
@@ -80,15 +79,11 @@
       "fuel_efficiency_km_per_l": 8.5,
       "energy_consumption_kwh_per_km": 1.176,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 217.5,
+      "variable_cost_per_km": 45.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 19.5,
-        "運転手人件費_円_per_km": 47.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
-        "作業時間人件費_15km_円_per_km": 66.5,
-        "作業時間人件費_30km_円_per_km": 33.5,
-        "作業時間人件費_40km_円_per_km": 25.0,
         "補助員人件費_円_per_km": 12.5
       },
       "annual_fixed_cost": 542000.0,
@@ -140,7 +135,10 @@
         "社会保険料_万円_per_年": "100-200",
         "年間走行距離_km": "25000",
         "備考": "重量物は2名体制"
-      }
+      },
+      "hourly_wage": 3200.0,
+      "average_speed_km_per_h": 35.0,
+      "loading_time_per_kg": 1.8
     },
     {
       "name": "2tダンプ",
@@ -151,15 +149,11 @@
       "fuel_efficiency_km_per_l": 8.0,
       "energy_consumption_kwh_per_km": 1.25,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 218.0,
+      "variable_cost_per_km": 45.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 20.0,
-        "運転手人件費_円_per_km": 47.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
-        "作業時間人件費_15km_円_per_km": 66.5,
-        "作業時間人件費_30km_円_per_km": 33.5,
-        "作業時間人件費_40km_円_per_km": 25.0,
         "補助員人件費_円_per_km": 12.5
       },
       "annual_fixed_cost": 582000.0,
@@ -211,7 +205,10 @@
         "社会保険料_万円_per_年": "100-200",
         "年間走行距離_km": "25000",
         "備考": "土砂・廃材用"
-      }
+      },
+      "hourly_wage": 3200.0,
+      "average_speed_km_per_h": 35.0,
+      "loading_time_per_kg": 1.5
     },
     {
       "name": "4t平ボディ",
@@ -222,15 +219,11 @@
       "fuel_efficiency_km_per_l": 6.5,
       "energy_consumption_kwh_per_km": 1.538,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 226.5,
+      "variable_cost_per_km": 62.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 24.5,
-        "運転手人件費_円_per_km": 52.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
-        "作業時間人件費_15km_円_per_km": 59.0,
-        "作業時間人件費_30km_円_per_km": 30.0,
-        "作業時間人件費_40km_円_per_km": 22.5,
         "補助員人件費_円_per_km": 25.0
       },
       "annual_fixed_cost": 840000.0,
@@ -282,7 +275,10 @@
         "社会保険料_万円_per_年": "100-200",
         "年間走行距離_km": "25000",
         "備考": "最も汎用性が高い"
-      }
+      },
+      "hourly_wage": 3500.0,
+      "average_speed_km_per_h": 40.0,
+      "loading_time_per_kg": 2.2
     },
     {
       "name": "4tダンプ",
@@ -293,15 +289,11 @@
       "fuel_efficiency_km_per_l": 6.5,
       "energy_consumption_kwh_per_km": 1.538,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 226.5,
+      "variable_cost_per_km": 62.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 24.5,
-        "運転手人件費_円_per_km": 52.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
-        "作業時間人件費_15km_円_per_km": 59.0,
-        "作業時間人件費_30km_円_per_km": 30.0,
-        "作業時間人件費_40km_円_per_km": 22.5,
         "補助員人件費_円_per_km": 25.0
       },
       "annual_fixed_cost": 900000.0,
@@ -353,7 +345,10 @@
         "社会保険料_万円_per_年": "100-200",
         "年間走行距離_km": "25000",
         "備考": "建設廃材用"
-      }
+      },
+      "hourly_wage": 3500.0,
+      "average_speed_km_per_h": 40.0,
+      "loading_time_per_kg": 1.8
     },
     {
       "name": "4tユニック",
@@ -364,15 +359,11 @@
       "fuel_efficiency_km_per_l": 6.0,
       "energy_consumption_kwh_per_km": 1.667,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 230.0,
+      "variable_cost_per_km": 66.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 25.5,
-        "運転手人件費_円_per_km": 52.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 11.5,
-        "作業時間人件費_15km_円_per_km": 59.0,
-        "作業時間人件費_30km_円_per_km": 30.0,
-        "作業時間人件費_40km_円_per_km": 22.5,
         "補助員人件費_円_per_km": 25.0
       },
       "annual_fixed_cost": 1150000.0,
@@ -424,7 +415,10 @@
         "社会保険料_万円_per_年": "100-200",
         "年間走行距離_km": "25000",
         "備考": "クレーン搭載"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "4tウイング",
@@ -435,15 +429,11 @@
       "fuel_efficiency_km_per_l": 6.5,
       "energy_consumption_kwh_per_km": 1.538,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 226.5,
+      "variable_cost_per_km": 62.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 24.5,
-        "運転手人件費_円_per_km": 52.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
-        "作業時間人件費_15km_円_per_km": 59.0,
-        "作業時間人件費_30km_円_per_km": 30.0,
-        "作業時間人件費_40km_円_per_km": 22.5,
         "補助員人件費_円_per_km": 25.0
       },
       "annual_fixed_cost": 1016000.0,
@@ -495,7 +485,10 @@
         "社会保険料_万円_per_年": "100-200",
         "年間走行距離_km": "25000",
         "備考": "側面開閉"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "4tパッカー",
@@ -506,15 +499,11 @@
       "fuel_efficiency_km_per_l": 6.0,
       "energy_consumption_kwh_per_km": 1.667,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 250.5,
+      "variable_cost_per_km": 79.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 25.5,
-        "運転手人件費_円_per_km": 55.0,
         "タイヤ交換費_円_per_km": 5.0,
         "修理費_円_per_km": 11.5,
-        "作業時間人件費_15km_円_per_km": 61.5,
-        "作業時間人件費_30km_円_per_km": 31.0,
-        "作業時間人件費_40km_円_per_km": 23.5,
         "補助員人件費_円_per_km": 37.5
       },
       "annual_fixed_cost": 1166000.0,
@@ -566,7 +555,10 @@
         "社会保険料_万円_per_年": "120-220",
         "年間走行距離_km": "25000",
         "備考": "圧縮機構付き・基本2名"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "4tアームロール",
@@ -577,15 +569,11 @@
       "fuel_efficiency_km_per_l": 6.5,
       "energy_consumption_kwh_per_km": 1.538,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 229.0,
+      "variable_cost_per_km": 65.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 24.5,
-        "運転手人件費_円_per_km": 52.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 11.5,
-        "作業時間人件費_15km_円_per_km": 59.0,
-        "作業時間人件費_30km_円_per_km": 30.0,
-        "作業時間人件費_40km_円_per_km": 22.5,
         "補助員人件費_円_per_km": 25.0
       },
       "annual_fixed_cost": 1246000.0,
@@ -637,7 +625,10 @@
         "社会保険料_万円_per_年": "120-220",
         "年間走行距離_km": "25000",
         "備考": "コンテナ脱着式"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "10t平ボディ",
@@ -648,15 +639,11 @@
       "fuel_efficiency_km_per_l": 4.25,
       "energy_consumption_kwh_per_km": 2.353,
       "annual_distance_km": 35000.0,
-      "variable_cost_per_km": 260.0,
+      "variable_cost_per_km": 114.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 36.5,
-        "運転手人件費_円_per_km": 56.5,
         "タイヤ交換費_円_per_km": 12.5,
         "修理費_円_per_km": 20.0,
-        "作業時間人件費_15km_円_per_km": 48.0,
-        "作業時間人件費_30km_円_per_km": 24.0,
-        "作業時間人件費_40km_円_per_km": 17.5,
         "補助員人件費_円_per_km": 45.0
       },
       "annual_fixed_cost": 1644714.285714286,
@@ -708,7 +695,10 @@
         "社会保険料_万円_per_年": "150-220",
         "年間走行距離_km": "35000",
         "備考": "大量輸送"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "10tダンプ",
@@ -719,15 +709,11 @@
       "fuel_efficiency_km_per_l": 4.25,
       "energy_consumption_kwh_per_km": 2.353,
       "annual_distance_km": 35000.0,
-      "variable_cost_per_km": 260.0,
+      "variable_cost_per_km": 114.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 36.5,
-        "運転手人件費_円_per_km": 56.5,
         "タイヤ交換費_円_per_km": 12.5,
         "修理費_円_per_km": 20.0,
-        "作業時間人件費_15km_円_per_km": 48.0,
-        "作業時間人件費_30km_円_per_km": 24.0,
-        "作業時間人件費_40km_円_per_km": 17.5,
         "補助員人件費_円_per_km": 45.0
       },
       "annual_fixed_cost": 1769000.0,
@@ -779,7 +765,10 @@
         "社会保険料_万円_per_年": "150-220",
         "年間走行距離_km": "35000",
         "備考": "建設現場用"
-      }
+      },
+      "hourly_wage": 4000.0,
+      "average_speed_km_per_h": 35.0,
+      "loading_time_per_kg": 2.5
     },
     {
       "name": "10tウイング",
@@ -790,15 +779,11 @@
       "fuel_efficiency_km_per_l": 4.25,
       "energy_consumption_kwh_per_km": 2.353,
       "annual_distance_km": 35000.0,
-      "variable_cost_per_km": 260.0,
+      "variable_cost_per_km": 114.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 36.5,
-        "運転手人件費_円_per_km": 56.5,
         "タイヤ交換費_円_per_km": 12.5,
         "修理費_円_per_km": 20.0,
-        "作業時間人件費_15km_円_per_km": 48.0,
-        "作業時間人件費_30km_円_per_km": 24.0,
-        "作業時間人件費_40km_円_per_km": 17.5,
         "補助員人件費_円_per_km": 45.0
       },
       "annual_fixed_cost": 1876142.8571428573,
@@ -850,7 +835,10 @@
         "社会保険料_万円_per_年": "150-220",
         "年間走行距離_km": "35000",
         "備考": "最も効率的"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "大型パッカー",
@@ -861,15 +849,11 @@
       "fuel_efficiency_km_per_l": 4.25,
       "energy_consumption_kwh_per_km": 2.353,
       "annual_distance_km": 35000.0,
-      "variable_cost_per_km": 278.0,
+      "variable_cost_per_km": 132.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 36.5,
-        "運転手人件費_円_per_km": 56.5,
         "タイヤ交換費_円_per_km": 15.0,
         "修理費_円_per_km": 23.0,
-        "作業時間人件費_15km_円_per_km": 48.0,
-        "作業時間人件費_30km_円_per_km": 24.0,
-        "作業時間人件費_40km_円_per_km": 17.5,
         "補助員人件費_円_per_km": 57.5
       },
       "annual_fixed_cost": 2001857.1428571427,
@@ -921,7 +905,10 @@
         "社会保険料_万円_per_年": "160-240",
         "年間走行距離_km": "35000",
         "備考": "圧縮機構付き・基本2名"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "バキューム車(4t)",
@@ -932,15 +919,11 @@
       "fuel_efficiency_km_per_l": 6.0,
       "energy_consumption_kwh_per_km": 1.667,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 233.5,
+      "variable_cost_per_km": 69.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 25.5,
-        "運転手人件費_円_per_km": 52.5,
         "タイヤ交換費_円_per_km": 5.0,
         "修理費_円_per_km": 14.0,
-        "作業時間人件費_15km_円_per_km": 59.0,
-        "作業時間人件費_30km_円_per_km": 30.0,
-        "作業時間人件費_40km_円_per_km": 22.5,
         "補助員人件費_円_per_km": 25.0
       },
       "annual_fixed_cost": 1394000.0,
@@ -992,7 +975,10 @@
         "社会保険料_万円_per_年": "120-220",
         "年間走行距離_km": "25000",
         "備考": "液状・泥状専用"
-      }
+      },
+      "hourly_wage": 3000.0,
+      "average_speed_km_per_h": 30.0,
+      "loading_time_per_kg": 2.0
     },
     {
       "name": "eCOM-10",
@@ -1003,15 +989,11 @@
       "fuel_efficiency_km_per_l": 0.0,
       "energy_consumption_kwh_per_km": 0.5,
       "annual_distance_km": 8000.0,
-      "variable_cost_per_km": 165.5,
+      "variable_cost_per_km": 20.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 12.5,
-        "運転手人件費_円_per_km": 45.0,
         "タイヤ交換費_円_per_km": 3.0,
         "修理費_円_per_km": 5.0,
-        "作業時間人件費_15km_円_per_km": 66.5,
-        "作業時間人件費_30km_円_per_km": 33.5,
-        "作業時間人件費_40km_円_per_km": 0.0,
         "補助員人件費_円_per_km": 0.0
       },
       "annual_fixed_cost": 715000.0,
@@ -1063,7 +1045,10 @@
         "社会保険料_万円_per_年": "50-60",
         "年間走行距離_km": "8000",
         "備考": "低速電動コミュニティバス・最高速度19km/h・航続距離30km・10輪・14人乗り・グリーンスローモビリティ"
-      }
+      },
+      "hourly_wage": 2800.0,
+      "average_speed_km_per_h": 12.0,
+      "loading_time_per_kg": 2.5
     }
   ]
 }
