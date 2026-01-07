@@ -133,7 +133,8 @@ def _route_distance(distance_matrix: DistanceMatrix, order: Sequence[str]) -> fl
 def _evaluate_cost(
     vehicle: VehicleType,
     distance_m: float,
-    vehicle_metadata: Optional[VehicleCandidate] = None
+    vehicle_metadata: Optional[VehicleCandidate] = None,
+    total_demand_kg: float = 0.0
 ) -> Dict[str, float]:
     """
     車両のコストとエネルギー消費量を評価し、詳細内訳を含むcost_breakdownを返す。
@@ -142,6 +143,7 @@ def _evaluate_cost(
         vehicle: 最適化用の車両タイプ
         distance_m: 走行距離(m)
         vehicle_metadata: 詳細内訳情報（Noneの場合は基本3項目のみ）
+        total_demand_kg: 総重量(kg) - 作業時間人件費計算に使用
 
     Returns:
         cost_breakdown辞書（基本3項目 + エネルギー消費量 + 詳細内訳）
@@ -169,9 +171,41 @@ def _evaluate_cost(
     if vehicle_metadata is None:
         return result
 
-    # 変動費詳細
+    # 🆕 作業時間ベース人件費計算
+    if (vehicle_metadata.hourly_wage is not None and
+        vehicle_metadata.average_speed_km_per_h is not None and
+        vehicle_metadata.loading_time_per_kg is not None):
+
+        hourly_wage = float(vehicle_metadata.hourly_wage)
+        average_speed = float(vehicle_metadata.average_speed_km_per_h)
+        loading_time_per_kg = float(vehicle_metadata.loading_time_per_kg)
+
+        # 運転手人件費 = (距離 ÷ 速度) × 時給
+        if average_speed > 0:
+            driver_hours = distance_km / average_speed
+            driver_labor_cost = driver_hours * hourly_wage
+            result["変動費_運転手人件費"] = int(driver_labor_cost)
+
+        # 作業時間人件費 = (総重量 × 積み込み時間/kg ÷ 3600) × 時給
+        if total_demand_kg > 0:
+            loading_hours = (total_demand_kg * loading_time_per_kg) / 3600.0
+            loading_labor_cost = loading_hours * hourly_wage
+            result["変動費_作業時間人件費"] = int(loading_labor_cost)
+
+    # 旧労働費パラメータのスキップリスト
+    OLD_LABOR_COST_KEYS = {
+        "運転手人件費_円_per_km",
+        "作業時間人件費_15km_円_per_km",
+        "作業時間人件費_30km_円_per_km",
+        "作業時間人件費_40km_円_per_km"
+    }
+
+    # 変動費詳細（旧労働費パラメータをスキップ）
     if vehicle_metadata.variable_cost_breakdown:
         for item_name, unit_cost in vehicle_metadata.variable_cost_breakdown.items():
+            # 旧労働費パラメータはスキップ
+            if item_name in OLD_LABOR_COST_KEYS:
+                continue
             try:
                 key = f"変動費_{item_name}"
                 result[key] = int(float(unit_cost) * distance_km)
@@ -229,10 +263,13 @@ def _solve_simple(
     if total_distance >= UNREACHABLE_COST:
         return NoSolution(NoSolutionReason.DISCONNECTED, "到達不能な区間があります。")
 
+    # 🆕 総重量を計算
+    total_demand_kg = sum(float(entry.get("demand", 0)) for entry in pickups)
+
     best_solution: Union[Solution, None] = None
     for vehicle in vehicles:
         metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(vehicle, total_distance, metadata)
+        breakdown = _evaluate_cost(vehicle, total_distance, metadata, total_demand_kg)
         solution = Solution(
             vehicle=vehicle,
             order=list(order),
@@ -269,6 +306,9 @@ def _solve_with_ortools(
     demands = [0] * len(point_ids_by_index)
     for entry in pickups:
         demands[index_map[entry["id"]]] = int(entry["demand"])
+
+    # 🆕 総重量を計算
+    total_demand_kg = sum(float(entry.get("demand", 0)) for entry in pickups)
 
     best_solution: Union[Solution, None] = None
 
@@ -345,7 +385,7 @@ def _solve_with_ortools(
 
         route_order = [point_ids_by_index[i] for i in route_indices]
         metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(vehicle, total_distance, metadata)
+        breakdown = _evaluate_cost(vehicle, total_distance, metadata, total_demand_kg)
         solution = Solution(
             vehicle=vehicle,
             order=route_order,
@@ -383,7 +423,8 @@ def solve_routing(
         base_order = _compute_route_order(depot, [], sink)
         total_distance = _route_distance(distance_matrix, base_order)
         metadata = vehicle_metadata_map.get(candidate_vehicles[0].name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(candidate_vehicles[0], total_distance, metadata)
+        # 🆕 空のピックアップなので総重量は0
+        breakdown = _evaluate_cost(candidate_vehicles[0], total_distance, metadata, 0.0)
         return Solution(
             vehicle=candidate_vehicles[0],
             order=base_order,
