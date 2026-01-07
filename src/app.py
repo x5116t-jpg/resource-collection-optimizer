@@ -1199,6 +1199,300 @@ def _get_vehicle_metadata(vehicle_name: str) -> Optional[VehicleCandidate]:
     return None
 
 
+def _extract_variable_costs(
+    cost_breakdown: Dict[str, float],
+    distance_km: float,
+    total_demand_kg: float,
+    hourly_wage: float,
+    helper_hourly_wage: float
+) -> List[Tuple[str, str, int]]:
+    """
+    変動費項目を抽出し、(表示名, 単価文字列, 金額)のリストを返す。
+
+    Args:
+        cost_breakdown: コスト内訳
+        distance_km: 走行距離
+        total_demand_kg: 総需要量
+        hourly_wage: 運転手時給
+        helper_hourly_wage: 補助員時給
+
+    Returns:
+        [(表示名, 単価文字列, 金額), ...]
+    """
+    items = []
+
+    # 燃料費(円/km)
+    fuel_key = "変動費_燃料費_円_per_km"
+    if fuel_key in cost_breakdown:
+        fuel_cost = int(cost_breakdown[fuel_key])
+        unit_cost = fuel_cost / distance_km if distance_km > 0 else 0
+        items.append(("  燃料費(円/km)", f"{unit_cost:.2f}", fuel_cost))
+
+    # 運転手人件費(円/h)
+    driver_key = "変動費_運転手人件費"
+    if driver_key in cost_breakdown:
+        driver_cost = int(cost_breakdown[driver_key])
+        items.append(("  運転手人件費(円/h)", f"{int(hourly_wage):,}", driver_cost))
+
+    # 作業時間人件費(円/kg)
+    loading_key = "変動費_作業時間人件費"
+    if loading_key in cost_breakdown:
+        loading_cost = int(cost_breakdown[loading_key])
+        unit_cost_key = "変動費_作業時間人件費_円_per_kg"
+        if unit_cost_key in cost_breakdown:
+            unit_cost = cost_breakdown[unit_cost_key]
+        else:
+            unit_cost = loading_cost / total_demand_kg if total_demand_kg > 0 else 0
+        items.append(("  作業時間人件費(円/kg)", f"{unit_cost:.2f}", loading_cost))
+
+    # 補助員人件費(円/h)
+    helper_key = "変動費_補助員人件費_円_per_km"
+    if helper_key in cost_breakdown:
+        helper_cost = int(cost_breakdown[helper_key])
+        items.append(("  補助員人件費(円/h)", f"{int(helper_hourly_wage):,}", helper_cost))
+
+    # 損料(円/km) = タイヤ交換費 + 修理費
+    tire_key = "変動費_タイヤ交換費_円_per_km"
+    repair_key = "変動費_修理費_円_per_km"
+    tire_cost = int(cost_breakdown.get(tire_key, 0))
+    repair_cost = int(cost_breakdown.get(repair_key, 0))
+    total_damage_cost = tire_cost + repair_cost
+    if total_damage_cost > 0:
+        unit_cost = total_damage_cost / distance_km if distance_km > 0 else 0
+        items.append(("  損料(円/km)", f"{unit_cost:.2f}", total_damage_cost))
+
+    return items
+
+
+def _extract_fixed_costs(
+    cost_breakdown: Dict[str, float],
+    distance_km: float
+) -> List[Tuple[str, str, int]]:
+    """
+    固定費項目を抽出し、(表示名, 単価文字列, 金額)のリストを返す。
+
+    Args:
+        cost_breakdown: コスト内訳
+        distance_km: 走行距離
+
+    Returns:
+        [(表示名, 単価文字列, 金額), ...]
+    """
+    items = []
+
+    # 項目定義（表示順）
+    fixed_items_config = [
+        ("固定費_減価償却費_万円_per_年", "  減価償却費(円/km)"),
+        ("固定費_自動車税_万円_per_年", "  自動車税(円/km)"),
+        ("固定費_重量税_万円_per_年", "  重量税(円/km)"),
+    ]
+
+    # 単純な項目
+    for key, display_name in fixed_items_config:
+        if key in cost_breakdown:
+            cost = int(cost_breakdown[key])
+            unit_cost = cost / distance_km if distance_km > 0 else 0
+            items.append((display_name, f"{unit_cost:.2f}", cost))
+
+    # 保険費用（自賠責、任意）(円/km) = 自賠責 + 任意
+    liability_key = "固定費_自賠責保険_万円_per_年"
+    voluntary_key = "固定費_任意保険_万円_per_年"
+    liability_cost = int(cost_breakdown.get(liability_key, 0))
+    voluntary_cost = int(cost_breakdown.get(voluntary_key, 0))
+    total_insurance = liability_cost + voluntary_cost
+    if total_insurance > 0:
+        unit_cost = total_insurance / distance_km if distance_km > 0 else 0
+        items.append(("  保険費用（自賠責、任意）(円/km)", f"{unit_cost:.2f}", total_insurance))
+
+    # 車検費用(円/km) = 車検費用 + 定期点検費用
+    inspection_key = "固定費_車検費用_万円_per_年"
+    maintenance_key = "固定費_定期点検費用_万円_per_年"
+    inspection_cost = int(cost_breakdown.get(inspection_key, 0))
+    maintenance_cost = int(cost_breakdown.get(maintenance_key, 0))
+    total_inspection = inspection_cost + maintenance_cost
+    if total_inspection > 0:
+        unit_cost = total_inspection / distance_km if distance_km > 0 else 0
+        items.append(("  車検費用(円/km)", f"{unit_cost:.2f}", total_inspection))
+
+    # 車庫賃料(円/km)
+    garage_key = "固定費_車庫賃料_万円_per_年"
+    if garage_key in cost_breakdown:
+        garage_cost = int(cost_breakdown[garage_key])
+        unit_cost = garage_cost / distance_km if distance_km > 0 else 0
+        items.append(("  車庫賃料(円/km)", f"{unit_cost:.2f}", garage_cost))
+
+    return items
+
+
+def _display_unified_cost_comparison(
+    optimal_breakdown: Dict[str, float],
+    ecom10_breakdown: Dict[str, float]
+) -> None:
+    """
+    最適解とeCOM-10のコスト内訳を統合表示する。
+
+    Args:
+        optimal_breakdown: 最適解のコスト内訳
+        ecom10_breakdown: eCOM-10のコスト内訳
+    """
+    st.markdown("### 💰 コスト内訳")
+
+    # データ抽出
+    rows = [
+        {
+            "項目": "固定費",
+            "金額（最適解）": f"{int(optimal_breakdown.get('fixed_cost', 0)):,}",
+            "金額（eCOM-10）": f"{int(ecom10_breakdown.get('fixed_cost', 0)):,}"
+        },
+        {
+            "項目": "変動費",
+            "金額（最適解）": f"{int(optimal_breakdown.get('distance_cost', 0)):,}",
+            "金額（eCOM-10）": f"{int(ecom10_breakdown.get('distance_cost', 0)):,}"
+        },
+        {
+            "項目": "総額",
+            "金額（最適解）": f"{int(optimal_breakdown.get('total_cost', 0)):,}",
+            "金額（eCOM-10）": f"{int(ecom10_breakdown.get('total_cost', 0)):,}"
+        },
+    ]
+
+    # DataFrame表示
+    if pd is not None:
+        df = pd.DataFrame(rows)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    else:
+        st.write(rows)
+
+
+def _display_unified_detailed_cost_comparison(
+    optimal_breakdown: Dict[str, float],
+    ecom10_breakdown: Dict[str, float],
+    optimal_vehicle_name: str,
+    ecom10_vehicle_name: str
+) -> None:
+    """
+    最適解とeCOM-10のコスト詳細内訳を統合表示する。
+
+    Args:
+        optimal_breakdown: 最適解のコスト内訳
+        ecom10_breakdown: eCOM-10のコスト内訳
+        optimal_vehicle_name: 最適解の車両名
+        ecom10_vehicle_name: eCOM-10の車両名
+    """
+    st.markdown("### 💰 コスト詳細内訳")
+    st.markdown(f"**車両**: {optimal_vehicle_name} vs {ecom10_vehicle_name}")
+
+    # 距離と需要量を取得
+    optimal_distance = optimal_breakdown.get("distance_km", 0.0)
+    ecom10_distance = ecom10_breakdown.get("distance_km", 0.0)
+    optimal_demand = optimal_breakdown.get("total_demand_kg", 0.0)
+    ecom10_demand = ecom10_breakdown.get("total_demand_kg", 0.0)
+
+    # 時給を取得（vehicle_metadataから取得するのが理想だが、デフォルト値を使用）
+    # VehicleCandidateから取得するロジックを追加する場合は、
+    # _get_vehicle_metadata()関数を使用して取得可能
+    optimal_meta = _get_vehicle_metadata(optimal_vehicle_name)
+    ecom10_meta = _get_vehicle_metadata(ecom10_vehicle_name)
+
+    optimal_hourly_wage = optimal_meta.hourly_wage if optimal_meta and optimal_meta.hourly_wage else 3000
+    ecom10_hourly_wage = ecom10_meta.hourly_wage if ecom10_meta and ecom10_meta.hourly_wage else 2800
+    helper_hourly_wage = 0  # 補助員なしと仮定
+
+    # 変動費項目抽出
+    optimal_variable = _extract_variable_costs(
+        optimal_breakdown, optimal_distance, optimal_demand,
+        optimal_hourly_wage, helper_hourly_wage
+    )
+    ecom10_variable = _extract_variable_costs(
+        ecom10_breakdown, ecom10_distance, ecom10_demand,
+        ecom10_hourly_wage, helper_hourly_wage
+    )
+
+    # 固定費項目抽出
+    optimal_fixed = _extract_fixed_costs(optimal_breakdown, optimal_distance)
+    ecom10_fixed = _extract_fixed_costs(ecom10_breakdown, ecom10_distance)
+
+    # 合計計算
+    optimal_variable_total = sum(item[2] for item in optimal_variable)
+    ecom10_variable_total = sum(item[2] for item in ecom10_variable)
+    optimal_fixed_total = sum(item[2] for item in optimal_fixed)
+    ecom10_fixed_total = sum(item[2] for item in ecom10_fixed)
+    optimal_total = int(optimal_breakdown.get("total_cost", 0))
+    ecom10_total = int(ecom10_breakdown.get("total_cost", 0))
+
+    # テーブル作成
+    rows = []
+
+    # 変動費計
+    rows.append({
+        "費用項目": "変動費計",
+        "最適解_単価": "-",
+        "最適解_金額（円）": f"{optimal_variable_total:,}",
+        "eCOM-10_単価": "-",
+        "eCOM-10_金額（円）": f"{ecom10_variable_total:,}"
+    })
+
+    # 変動費項目（項目数が多い方に合わせる）
+    max_variable_len = max(len(optimal_variable), len(ecom10_variable))
+    for i in range(max_variable_len):
+        optimal_item = optimal_variable[i] if i < len(optimal_variable) else ("", "", 0)
+        ecom10_item = ecom10_variable[i] if i < len(ecom10_variable) else ("", "", 0)
+
+        # 項目名を統一（最適解優先、なければeCOM-10）
+        item_name = optimal_item[0] if optimal_item[0] else ecom10_item[0]
+
+        rows.append({
+            "費用項目": item_name,
+            "最適解_単価": optimal_item[1] if optimal_item[1] else "-",
+            "最適解_金額（円）": f"{optimal_item[2]:,}" if optimal_item[2] > 0 else "0",
+            "eCOM-10_単価": ecom10_item[1] if ecom10_item[1] else "-",
+            "eCOM-10_金額（円）": f"{ecom10_item[2]:,}" if ecom10_item[2] > 0 else "0"
+        })
+
+    # 固定費計
+    rows.append({
+        "費用項目": "固定費計",
+        "最適解_単価": "-",
+        "最適解_金額（円）": f"{optimal_fixed_total:,}",
+        "eCOM-10_単価": "-",
+        "eCOM-10_金額（円）": f"{ecom10_fixed_total:,}"
+    })
+
+    # 固定費項目
+    max_fixed_len = max(len(optimal_fixed), len(ecom10_fixed))
+    for i in range(max_fixed_len):
+        optimal_item = optimal_fixed[i] if i < len(optimal_fixed) else ("", "", 0)
+        ecom10_item = ecom10_fixed[i] if i < len(ecom10_fixed) else ("", "", 0)
+
+        item_name = optimal_item[0] if optimal_item[0] else ecom10_item[0]
+
+        rows.append({
+            "費用項目": item_name,
+            "最適解_単価": optimal_item[1] if optimal_item[1] else "-",
+            "最適解_金額（円）": f"{optimal_item[2]:,}" if optimal_item[2] > 0 else "0",
+            "eCOM-10_単価": ecom10_item[1] if ecom10_item[1] else "-",
+            "eCOM-10_金額（円）": f"{ecom10_item[2]:,}" if ecom10_item[2] > 0 else "0"
+        })
+
+    # 総コスト
+    rows.append({
+        "費用項目": "総コスト",
+        "最適解_単価": "-",
+        "最適解_金額（円）": f"{optimal_total:,}",
+        "eCOM-10_単価": "-",
+        "eCOM-10_金額（円）": f"{ecom10_total:,}"
+    })
+
+    # DataFrame表示
+    if pd is not None:
+        df = pd.DataFrame(rows)
+        # カラム名を整形（マルチインデックス風）
+        st.markdown("**表示形式**: 最適解 | eCOM-10")
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    else:
+        st.write(rows)
+
+
 def _display_variable_cost_table(
     cost_breakdown: Dict[str, float],
     vehicle_name: str,
@@ -1349,8 +1643,6 @@ def _display_detailed_cost_breakdown(
     _display_variable_cost_table(cost_breakdown, vehicle_name, distance_km)
     st.markdown("---")
     _display_fixed_cost_table(cost_breakdown, vehicle_name, distance_km)
-    st.markdown("---")
-    _display_cost_formula(cost_breakdown)
 
 
 def _display_single_solution(
@@ -1635,39 +1927,38 @@ def _display_comparison_results(
     st.markdown("---")
     st.markdown("## 📋 最適化結果の詳細")
 
-    # コスト内訳テーブル
-    st.markdown("### 💰 コスト内訳（最適解）")
-    breakdown_rows = [
-        {"項目": "固定費", "金額": optimal_solution.cost_breakdown.get("fixed_cost", 0.0)},
-        {"項目": "距離費", "金額": optimal_solution.cost_breakdown.get("distance_cost", 0.0)},
-        {"項目": "総額", "金額": optimal_solution.cost_breakdown.get("total_cost", 0.0)},
-    ]
-    if pd is not None:
-        st.table(pd.DataFrame(breakdown_rows))
-    else:
-        st.write(breakdown_rows)
-
-    # コスト内訳テーブル（eCOM-10）
+    # 統合コスト内訳表示
     if isinstance(ecom10_solution, FleetSolution):
-        st.markdown("### 💰 コスト内訳（eCOM-10）")
-        ecom10_breakdown_rows = [
-            {"項目": "固定費", "金額": ecom10_solution.cost_breakdown.get("fixed_cost", 0.0)},
-            {"項目": "距離費", "金額": ecom10_solution.cost_breakdown.get("distance_cost", 0.0)},
-            {"項目": "総額", "金額": ecom10_solution.cost_breakdown.get("total_cost", 0.0)},
+        _display_unified_cost_comparison(
+            optimal_solution.cost_breakdown,
+            ecom10_solution.cost_breakdown
+        )
+
+        st.markdown("---")
+
+        # 統合コスト詳細内訳表示
+        if ecom10_solution.routes and optimal_solution.routes:
+            optimal_vehicle_name = optimal_solution.routes[0].vehicle.name
+            ecom10_vehicle_name = ecom10_solution.routes[0].vehicle.name
+
+            _display_unified_detailed_cost_comparison(
+                optimal_solution.routes[0].solution.cost_breakdown,
+                ecom10_solution.routes[0].solution.cost_breakdown,
+                optimal_vehicle_name,
+                ecom10_vehicle_name
+            )
+    else:
+        # eCOM-10が利用不可の場合は最適解のみ表示
+        st.markdown("### 💰 コスト内訳（最適解）")
+        breakdown_rows = [
+            {"項目": "固定費", "金額": f"{int(optimal_solution.cost_breakdown.get('fixed_cost', 0)):,}"},
+            {"項目": "変動費", "金額": f"{int(optimal_solution.cost_breakdown.get('distance_cost', 0)):,}"},
+            {"項目": "総額", "金額": f"{int(optimal_solution.cost_breakdown.get('total_cost', 0)):,}"},
         ]
         if pd is not None:
-            st.table(pd.DataFrame(ecom10_breakdown_rows))
+            st.table(pd.DataFrame(breakdown_rows))
         else:
-            st.write(ecom10_breakdown_rows)
-
-        # コスト詳細内訳（eCOM-10）
-        # eCOM-10は通常単一車両なので、routes[0]のcost_breakdownを使用
-        if ecom10_solution.routes:
-            first_route = ecom10_solution.routes[0]
-            _display_detailed_cost_breakdown(
-                first_route.solution.cost_breakdown,
-                first_route.vehicle.name
-            )
+            st.write(breakdown_rows)
 
     # 各車両ごとのルート詳細
     st.markdown("### 🚗 各車両のルート詳細")
