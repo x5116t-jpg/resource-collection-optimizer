@@ -9,25 +9,19 @@
       "fuel_efficiency_km_per_l": 14.5,
       "energy_consumption_kwh_per_km": 0.607,
       "annual_distance_km": 20000.0,
-      "variable_cost_per_km": 321.0,
+      "variable_cost_per_km": 252.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 12.0,
         "運転手人件費_円_per_km": 47.0,
-        "高速料金_円_per_km": 27.5,
         "タイヤ交換費_円_per_km": 2.0,
         "修理費_円_per_km": 4.0,
         "作業時間人件費_15km_円_per_km": 100.0,
         "作業時間人件費_30km_円_per_km": 50.0,
         "作業時間人件費_40km_円_per_km": 37.5,
-        "補助員人件費_円_per_km": 0.0,
-        "回収容器費_円_per_km": 6.5,
-        "消耗品費_円_per_km": 2.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 4.0,
-        "処理費_参考値_円_per_km": 25.0
+        "補助員人件費_円_per_km": 0.0
       },
-      "annual_fixed_cost": 1882000.0,
-      "fixed_cost_per_km": 47.05,
+      "annual_fixed_cost": 291000.0,
+      "fixed_cost_per_km": 14.55,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 12.5,
         "自動車税_万円_per_年": 0.4,
@@ -36,11 +30,7 @@
         "任意保険_万円_per_年": 3.25,
         "車検費用_万円_per_年": 2.0,
         "定期点検費用_万円_per_年": 1.25,
-        "車庫賃料_万円_per_年": 9.0,
-        "許認可費用_万円_per_年": 2.0,
-        "システム利用料_万円_per_年": 3.0,
-        "福利厚生費_万円_per_年": 10.0,
-        "社会保険料_万円_per_年": 50.0
+        "車庫賃料_万円_per_年": 9.0
       },
       "remarks": "1名体制",
       "raw": {
@@ -90,25 +80,19 @@
       "fuel_efficiency_km_per_l": 8.5,
       "energy_consumption_kwh_per_km": 1.176,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 320.0,
+      "variable_cost_per_km": 217.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 19.5,
         "運転手人件費_円_per_km": 47.5,
-        "高速料金_円_per_km": 32.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
         "作業時間人件費_15km_円_per_km": 66.5,
         "作業時間人件費_30km_円_per_km": 33.5,
         "作業時間人件費_40km_円_per_km": 25.0,
-        "補助員人件費_円_per_km": 12.5,
-        "回収容器費_円_per_km": 11.5,
-        "消耗品費_円_per_km": 4.0,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 6.5,
-        "処理費_参考値_円_per_km": 45.0
+        "補助員人件費_円_per_km": 12.5
       },
-      "annual_fixed_cost": 3355000.0,
-      "fixed_cost_per_km": 53.68,
+      "annual_fixed_cost": 542000.0,
+      "fixed_cost_per_km": 21.68,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 32.0,
         "自動車税_万円_per_年": 0.74,
@@ -117,11 +101,7 @@
         "任意保険_万円_per_年": 5.2,
         "車検費用_万円_per_年": 2.6,
         "定期点検費用_万円_per_年": 1.6,
-        "車庫賃料_万円_per_年": 10.8,
-        "許認可費用_万円_per_年": 2.6,
-        "システム利用料_万円_per_年": 3.4,
-        "福利厚生費_万円_per_年": 14.0,
-        "社会保険料_万円_per_年": 60.0
+        "車庫賃料_万円_per_年": 10.8
       },
       "remarks": "重量物は2名体制",
       "raw": {
@@ -171,25 +151,19 @@
       "fuel_efficiency_km_per_l": 8.0,
       "energy_consumption_kwh_per_km": 1.25,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 316.5,
+      "variable_cost_per_km": 218.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 20.0,
         "運転手人件費_円_per_km": 47.5,
-        "高速料金_円_per_km": 32.5,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
         "作業時間人件費_15km_円_per_km": 66.5,
         "作業時間人件費_30km_円_per_km": 33.5,
         "作業時間人件費_40km_円_per_km": 25.0,
-        "補助員人件費_円_per_km": 12.5,
-        "回収容器費_円_per_km": 7.5,
-        "消耗品費_円_per_km": 4.0,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 6.5,
-        "処理費_参考値_円_per_km": 45.0
+        "補助員人件費_円_per_km": 12.5
       },
-      "annual_fixed_cost": 3455000.0,
-      "fixed_cost_per_km": 55.28,
+      "annual_fixed_cost": 582000.0,
+      "fixed_cost_per_km": 23.28,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 36.0,
         "自動車税_万円_per_年": 0.74,
@@ -198,11 +172,7 @@
         "任意保険_万円_per_年": 5.2,
         "車検費用_万円_per_年": 2.6,
         "定期点検費用_万円_per_年": 1.6,
-        "車庫賃料_万円_per_年": 10.8,
-        "許認可費用_万円_per_年": 2.6,
-        "システム利用料_万円_per_年": 3.4,
-        "福利厚生費_万円_per_年": 14.0,
-        "社会保険料_万円_per_年": 60.0
+        "車庫賃料_万円_per_年": 10.8
       },
       "remarks": "土砂・廃材用",
       "raw": {
@@ -252,25 +222,19 @@
       "fuel_efficiency_km_per_l": 6.5,
       "energy_consumption_kwh_per_km": 1.538,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 365.0,
+      "variable_cost_per_km": 226.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 24.5,
         "運転手人件費_円_per_km": 52.5,
-        "高速料金_円_per_km": 45.0,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
         "作業時間人件費_15km_円_per_km": 59.0,
         "作業時間人件費_30km_円_per_km": 30.0,
         "作業時間人件費_40km_円_per_km": 22.5,
-        "補助員人件費_円_per_km": 25.0,
-        "回収容器費_円_per_km": 11.5,
-        "消耗品費_円_per_km": 5.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 8.5,
-        "処理費_参考値_円_per_km": 65.0
+        "補助員人件費_円_per_km": 25.0
       },
-      "annual_fixed_cost": 4175000.0,
-      "fixed_cost_per_km": 66.8,
+      "annual_fixed_cost": 840000.0,
+      "fixed_cost_per_km": 33.6,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 52.0,
         "自動車税_万円_per_年": 1.2,
@@ -279,11 +243,7 @@
         "任意保険_万円_per_年": 8.0,
         "車検費用_万円_per_年": 4.0,
         "定期点検費用_万円_per_年": 2.6,
-        "車庫賃料_万円_per_年": 14.4,
-        "許認可費用_万円_per_年": 4.6,
-        "システム利用料_万円_per_年": 4.4,
-        "福利厚生費_万円_per_年": 14.0,
-        "社会保険料_万円_per_年": 60.0
+        "車庫賃料_万円_per_年": 14.4
       },
       "remarks": "最も汎用性が高い",
       "raw": {
@@ -333,25 +293,19 @@
       "fuel_efficiency_km_per_l": 6.5,
       "energy_consumption_kwh_per_km": 1.538,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 361.0,
+      "variable_cost_per_km": 226.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 24.5,
         "運転手人件費_円_per_km": 52.5,
-        "高速料金_円_per_km": 45.0,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
         "作業時間人件費_15km_円_per_km": 59.0,
         "作業時間人件費_30km_円_per_km": 30.0,
         "作業時間人件費_40km_円_per_km": 22.5,
-        "補助員人件費_円_per_km": 25.0,
-        "回収容器費_円_per_km": 7.5,
-        "消耗品費_円_per_km": 5.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 8.5,
-        "処理費_参考値_円_per_km": 65.0
+        "補助員人件費_円_per_km": 25.0
       },
-      "annual_fixed_cost": 4325000.0,
-      "fixed_cost_per_km": 69.2,
+      "annual_fixed_cost": 900000.0,
+      "fixed_cost_per_km": 36.0,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 58.0,
         "自動車税_万円_per_年": 1.2,
@@ -360,11 +314,7 @@
         "任意保険_万円_per_年": 8.0,
         "車検費用_万円_per_年": 4.0,
         "定期点検費用_万円_per_年": 2.6,
-        "車庫賃料_万円_per_年": 14.4,
-        "許認可費用_万円_per_年": 4.6,
-        "システム利用料_万円_per_年": 4.4,
-        "福利厚生費_万円_per_年": 14.0,
-        "社会保険料_万円_per_年": 60.0
+        "車庫賃料_万円_per_年": 14.4
       },
       "remarks": "建設廃材用",
       "raw": {
@@ -414,25 +364,19 @@
       "fuel_efficiency_km_per_l": 6.0,
       "energy_consumption_kwh_per_km": 1.667,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 368.5,
+      "variable_cost_per_km": 230.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 25.5,
         "運転手人件費_円_per_km": 52.5,
-        "高速料金_円_per_km": 45.0,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 11.5,
         "作業時間人件費_15km_円_per_km": 59.0,
         "作業時間人件費_30km_円_per_km": 30.0,
         "作業時間人件費_40km_円_per_km": 22.5,
-        "補助員人件費_円_per_km": 25.0,
-        "回収容器費_円_per_km": 11.5,
-        "消耗品費_円_per_km": 5.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 8.5,
-        "処理費_参考値_円_per_km": 65.0
+        "補助員人件費_円_per_km": 25.0
       },
-      "annual_fixed_cost": 5010000.0,
-      "fixed_cost_per_km": 80.16,
+      "annual_fixed_cost": 1150000.0,
+      "fixed_cost_per_km": 46.0,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 80.0,
         "自動車税_万円_per_年": 1.2,
@@ -441,11 +385,7 @@
         "任意保険_万円_per_年": 10.0,
         "車検費用_万円_per_年": 5.0,
         "定期点検費用_万円_per_年": 2.6,
-        "車庫賃料_万円_per_年": 14.4,
-        "許認可費用_万円_per_年": 5.6,
-        "システム利用料_万円_per_年": 4.8,
-        "福利厚生費_万円_per_年": 15.0,
-        "社会保険料_万円_per_年": 60.0
+        "車庫賃料_万円_per_年": 14.4
       },
       "remarks": "クレーン搭載",
       "raw": {
@@ -495,25 +435,19 @@
       "fuel_efficiency_km_per_l": 6.5,
       "energy_consumption_kwh_per_km": 1.538,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 368.5,
+      "variable_cost_per_km": 226.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 24.5,
         "運転手人件費_円_per_km": 52.5,
-        "高速料金_円_per_km": 45.0,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 9.0,
         "作業時間人件費_15km_円_per_km": 59.0,
         "作業時間人件費_30km_円_per_km": 30.0,
         "作業時間人件費_40km_円_per_km": 22.5,
-        "補助員人件費_円_per_km": 25.0,
-        "回収容器費_円_per_km": 15.0,
-        "消耗品費_円_per_km": 5.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 8.5,
-        "処理費_参考値_円_per_km": 65.0
+        "補助員人件費_円_per_km": 25.0
       },
-      "annual_fixed_cost": 4615000.0,
-      "fixed_cost_per_km": 73.84,
+      "annual_fixed_cost": 1016000.0,
+      "fixed_cost_per_km": 40.64,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 68.0,
         "自動車税_万円_per_年": 1.2,
@@ -522,11 +456,7 @@
         "任意保険_万円_per_年": 9.0,
         "車検費用_万円_per_年": 4.6,
         "定期点検費用_万円_per_年": 2.6,
-        "車庫賃料_万円_per_年": 14.4,
-        "許認可費用_万円_per_年": 4.6,
-        "システム利用料_万円_per_年": 4.4,
-        "福利厚生費_万円_per_年": 14.0,
-        "社会保険料_万円_per_年": 60.0
+        "車庫賃料_万円_per_年": 14.4
       },
       "remarks": "側面開閉",
       "raw": {
@@ -576,25 +506,19 @@
       "fuel_efficiency_km_per_l": 6.0,
       "energy_consumption_kwh_per_km": 1.667,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 416.0,
+      "variable_cost_per_km": 250.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 25.5,
         "運転手人件費_円_per_km": 55.0,
-        "高速料金_円_per_km": 45.0,
         "タイヤ交換費_円_per_km": 5.0,
         "修理費_円_per_km": 11.5,
         "作業時間人件費_15km_円_per_km": 61.5,
         "作業時間人件費_30km_円_per_km": 31.0,
         "作業時間人件費_40km_円_per_km": 23.5,
-        "補助員人件費_円_per_km": 37.5,
-        "回収容器費_円_per_km": 18.5,
-        "消耗品費_円_per_km": 7.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 11.5,
-        "処理費_参考値_円_per_km": 80.0
+        "補助員人件費_円_per_km": 37.5
       },
-      "annual_fixed_cost": 5325000.0,
-      "fixed_cost_per_km": 85.2,
+      "annual_fixed_cost": 1166000.0,
+      "fixed_cost_per_km": 46.64,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 80.0,
         "自動車税_万円_per_年": 1.2,
@@ -603,11 +527,7 @@
         "任意保険_万円_per_年": 11.0,
         "車検費用_万円_per_年": 5.6,
         "定期点検費用_万円_per_年": 2.6,
-        "車庫賃料_万円_per_年": 14.4,
-        "許認可費用_万円_per_年": 5.6,
-        "システム利用料_万円_per_年": 4.8,
-        "福利厚生費_万円_per_年": 18.0,
-        "社会保険料_万円_per_年": 68.0
+        "車庫賃料_万円_per_年": 14.4
       },
       "remarks": "圧縮機構付き・基本2名",
       "raw": {
@@ -657,25 +577,19 @@
       "fuel_efficiency_km_per_l": 6.5,
       "energy_consumption_kwh_per_km": 1.538,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 414.0,
+      "variable_cost_per_km": 229.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 24.5,
         "運転手人件費_円_per_km": 52.5,
-        "高速料金_円_per_km": 45.0,
         "タイヤ交換費_円_per_km": 4.0,
         "修理費_円_per_km": 11.5,
         "作業時間人件費_15km_円_per_km": 59.0,
         "作業時間人件費_30km_円_per_km": 30.0,
         "作業時間人件費_40km_円_per_km": 22.5,
-        "補助員人件費_円_per_km": 25.0,
-        "回収容器費_円_per_km": 20.0,
-        "消耗品費_円_per_km": 5.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 11.5,
-        "処理費_参考値_円_per_km": 100.0
+        "補助員人件費_円_per_km": 25.0
       },
-      "annual_fixed_cost": 5475000.0,
-      "fixed_cost_per_km": 87.6,
+      "annual_fixed_cost": 1246000.0,
+      "fixed_cost_per_km": 49.84,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 88.0,
         "自動車税_万円_per_年": 1.2,
@@ -684,11 +598,7 @@
         "任意保険_万円_per_年": 11.0,
         "車検費用_万円_per_年": 5.6,
         "定期点検費用_万円_per_年": 2.6,
-        "車庫賃料_万円_per_年": 14.4,
-        "許認可費用_万円_per_年": 5.6,
-        "システム利用料_万円_per_年": 4.8,
-        "福利厚生費_万円_per_年": 16.0,
-        "社会保険料_万円_per_年": 68.0
+        "車庫賃料_万円_per_年": 14.4
       },
       "remarks": "コンテナ脱着式",
       "raw": {
@@ -738,25 +648,19 @@
       "fuel_efficiency_km_per_l": 4.25,
       "energy_consumption_kwh_per_km": 2.353,
       "annual_distance_km": 35000.0,
-      "variable_cost_per_km": 503.0,
+      "variable_cost_per_km": 260.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 36.5,
         "運転手人件費_円_per_km": 56.5,
-        "高速料金_円_per_km": 67.5,
         "タイヤ交換費_円_per_km": 12.5,
         "修理費_円_per_km": 20.0,
         "作業時間人件費_15km_円_per_km": 48.0,
         "作業時間人件費_30km_円_per_km": 24.0,
         "作業時間人件費_40km_円_per_km": 17.5,
-        "補助員人件費_円_per_km": 45.0,
-        "回収容器費_円_per_km": 17.5,
-        "消耗品費_円_per_km": 10.0,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 15.0,
-        "処理費_参考値_円_per_km": 130.0
+        "補助員人件費_円_per_km": 45.0
       },
-      "annual_fixed_cost": 8391500.0,
-      "fixed_cost_per_km": 68.50204081632653,
+      "annual_fixed_cost": 1644714.285714286,
+      "fixed_cost_per_km": 46.99,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 128.57142857142858,
         "自動車税_万円_per_年": 1.4285714285714286,
@@ -765,11 +669,7 @@
         "任意保険_万円_per_年": 10.0,
         "車検費用_万円_per_年": 4.285714285714286,
         "定期点検費用_万円_per_年": 2.857142857142857,
-        "車庫賃料_万円_per_年": 15.428571428571429,
-        "許認可費用_万円_per_年": 4.857142857142857,
-        "システム利用料_万円_per_年": 4.0,
-        "福利厚生費_万円_per_年": 13.571428571428571,
-        "社会保険料_万円_per_年": 52.857142857142854
+        "車庫賃料_万円_per_年": 15.428571428571429
       },
       "remarks": "大量輸送",
       "raw": {
@@ -819,25 +719,19 @@
       "fuel_efficiency_km_per_l": 4.25,
       "energy_consumption_kwh_per_km": 2.353,
       "annual_distance_km": 35000.0,
-      "variable_cost_per_km": 499.5,
+      "variable_cost_per_km": 260.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 36.5,
         "運転手人件費_円_per_km": 56.5,
-        "高速料金_円_per_km": 67.5,
         "タイヤ交換費_円_per_km": 12.5,
         "修理費_円_per_km": 20.0,
         "作業時間人件費_15km_円_per_km": 48.0,
         "作業時間人件費_30km_円_per_km": 24.0,
         "作業時間人件費_40km_円_per_km": 17.5,
-        "補助員人件費_円_per_km": 45.0,
-        "回収容器費_円_per_km": 14.0,
-        "消耗品費_円_per_km": 10.0,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 15.0,
-        "処理費_参考値_円_per_km": 130.0
+        "補助員人件費_円_per_km": 45.0
       },
-      "annual_fixed_cost": 8826500.0,
-      "fixed_cost_per_km": 72.0530612244898,
+      "annual_fixed_cost": 1769000.0,
+      "fixed_cost_per_km": 50.54,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 140.0,
         "自動車税_万円_per_年": 1.4285714285714286,
@@ -846,11 +740,7 @@
         "任意保険_万円_per_年": 10.714285714285714,
         "車検費用_万円_per_年": 4.571428571428571,
         "定期点検費用_万円_per_年": 2.857142857142857,
-        "車庫賃料_万円_per_年": 15.428571428571429,
-        "許認可費用_万円_per_年": 4.857142857142857,
-        "システム利用料_万円_per_年": 4.0,
-        "福利厚生費_万円_per_年": 13.571428571428571,
-        "社会保険料_万円_per_年": 52.857142857142854
+        "車庫賃料_万円_per_年": 15.428571428571429
       },
       "remarks": "建設現場用",
       "raw": {
@@ -900,25 +790,19 @@
       "fuel_efficiency_km_per_l": 4.25,
       "energy_consumption_kwh_per_km": 2.353,
       "annual_distance_km": 35000.0,
-      "variable_cost_per_km": 505.5,
+      "variable_cost_per_km": 260.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 36.5,
         "運転手人件費_円_per_km": 56.5,
-        "高速料金_円_per_km": 67.5,
         "タイヤ交換費_円_per_km": 12.5,
         "修理費_円_per_km": 20.0,
         "作業時間人件費_15km_円_per_km": 48.0,
         "作業時間人件費_30km_円_per_km": 24.0,
         "作業時間人件費_40km_円_per_km": 17.5,
-        "補助員人件費_円_per_km": 45.0,
-        "回収容器費_円_per_km": 20.0,
-        "消耗品費_円_per_km": 10.0,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 15.0,
-        "処理費_参考値_円_per_km": 130.0
+        "補助員人件費_円_per_km": 45.0
       },
-      "annual_fixed_cost": 9326500.0,
-      "fixed_cost_per_km": 76.13469387755103,
+      "annual_fixed_cost": 1876142.8571428573,
+      "fixed_cost_per_km": 53.6,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 148.57142857142858,
         "自動車税_万円_per_年": 1.4285714285714286,
@@ -927,11 +811,7 @@
         "任意保険_万円_per_年": 12.142857142857142,
         "車検費用_万円_per_年": 5.285714285714286,
         "定期点検費用_万円_per_年": 2.857142857142857,
-        "車庫賃料_万円_per_年": 15.428571428571429,
-        "許認可費用_万円_per_年": 5.714285714285714,
-        "システム利用料_万円_per_年": 4.571428571428571,
-        "福利厚生費_万円_per_年": 15.714285714285714,
-        "社会保険料_万円_per_年": 52.857142857142854
+        "車庫賃料_万円_per_年": 15.428571428571429
       },
       "remarks": "最も効率的",
       "raw": {
@@ -981,25 +861,19 @@
       "fuel_efficiency_km_per_l": 4.25,
       "energy_consumption_kwh_per_km": 2.353,
       "annual_distance_km": 35000.0,
-      "variable_cost_per_km": 553.5,
+      "variable_cost_per_km": 278.0,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 36.5,
         "運転手人件費_円_per_km": 56.5,
-        "高速料金_円_per_km": 67.5,
         "タイヤ交換費_円_per_km": 15.0,
         "修理費_円_per_km": 23.0,
         "作業時間人件費_15km_円_per_km": 48.0,
         "作業時間人件費_30km_円_per_km": 24.0,
         "作業時間人件費_40km_円_per_km": 17.5,
-        "補助員人件費_円_per_km": 57.5,
-        "回収容器費_円_per_km": 24.0,
-        "消耗品費_円_per_km": 12.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 18.5,
-        "処理費_参考値_円_per_km": 150.0
+        "補助員人件費_円_per_km": 57.5
       },
-      "annual_fixed_cost": 9991500.0,
-      "fixed_cost_per_km": 81.56326530612246,
+      "annual_fixed_cost": 2001857.1428571427,
+      "fixed_cost_per_km": 57.2,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 160.0,
         "自動車税_万円_per_年": 1.4285714285714286,
@@ -1008,11 +882,7 @@
         "任意保険_万円_per_年": 12.857142857142858,
         "車検費用_万円_per_年": 5.714285714285714,
         "定期点検費用_万円_per_年": 2.857142857142857,
-        "車庫賃料_万円_per_年": 15.428571428571429,
-        "許認可費用_万円_per_年": 5.714285714285714,
-        "システム利用料_万円_per_年": 4.571428571428571,
-        "福利厚生費_万円_per_年": 17.857142857142858,
-        "社会保険料_万円_per_年": 57.142857142857146
+        "車庫賃料_万円_per_年": 15.428571428571429
       },
       "remarks": "圧縮機構付き・基本2名",
       "raw": {
@@ -1062,25 +932,19 @@
       "fuel_efficiency_km_per_l": 6.0,
       "energy_consumption_kwh_per_km": 1.667,
       "annual_distance_km": 25000.0,
-      "variable_cost_per_km": 395.5,
+      "variable_cost_per_km": 233.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 25.5,
         "運転手人件費_円_per_km": 52.5,
-        "高速料金_円_per_km": 45.0,
         "タイヤ交換費_円_per_km": 5.0,
         "修理費_円_per_km": 14.0,
         "作業時間人件費_15km_円_per_km": 59.0,
         "作業時間人件費_30km_円_per_km": 30.0,
         "作業時間人件費_40km_円_per_km": 22.5,
-        "補助員人件費_円_per_km": 25.0,
-        "回収容器費_円_per_km": 10.0,
-        "消耗品費_円_per_km": 7.5,
-        "通信費_円_per_km": 3.0,
-        "マニフェスト費用_円_per_km": 11.5,
-        "処理費_参考値_円_per_km": 85.0
+        "補助員人件費_円_per_km": 25.0
       },
-      "annual_fixed_cost": 5935000.0,
-      "fixed_cost_per_km": 94.96,
+      "annual_fixed_cost": 1394000.0,
+      "fixed_cost_per_km": 55.76,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 100.0,
         "自動車税_万円_per_年": 1.2,
@@ -1089,11 +953,7 @@
         "任意保険_万円_per_年": 13.0,
         "車検費用_万円_per_年": 6.4,
         "定期点検費用_万円_per_年": 2.6,
-        "車庫賃料_万円_per_年": 14.4,
-        "許認可費用_万円_per_年": 6.4,
-        "システム利用料_万円_per_年": 5.6,
-        "福利厚生費_万円_per_年": 18.0,
-        "社会保険料_万円_per_年": 68.0
+        "車庫賃料_万円_per_年": 14.4
       },
       "remarks": "液状・泥状専用",
       "raw": {
@@ -1143,38 +1003,28 @@
       "fuel_efficiency_km_per_l": 0.0,
       "energy_consumption_kwh_per_km": 0.5,
       "annual_distance_km": 8000.0,
-      "variable_cost_per_km": 185.0,
+      "variable_cost_per_km": 165.5,
       "variable_cost_breakdown": {
         "燃料費_円_per_km": 12.5,
         "運転手人件費_円_per_km": 45.0,
-        "高速料金_円_per_km": 0.0,
         "タイヤ交換費_円_per_km": 3.0,
         "修理費_円_per_km": 5.0,
         "作業時間人件費_15km_円_per_km": 66.5,
         "作業時間人件費_30km_円_per_km": 33.5,
         "作業時間人件費_40km_円_per_km": 0.0,
-        "補助員人件費_円_per_km": 0.0,
-        "回収容器費_円_per_km": 5.0,
-        "消耗品費_円_per_km": 2.0,
-        "通信費_円_per_km": 2.5,
-        "マニフェスト費用_円_per_km": 3.0,
-        "処理費_参考値_円_per_km": 20.0
+        "補助員人件費_円_per_km": 0.0
       },
-      "annual_fixed_cost": 2280000.0,
-      "fixed_cost_per_km": 285.0,
+      "annual_fixed_cost": 715000.0,
+      "fixed_cost_per_km": 89.38,
       "fixed_cost_breakdown": {
         "減価償却費_万円_per_年": 50.0,
-        "自動車税_万円_per_年": 0.0,
-        "重量税_万円_per_年": 0.0,
+        "自動車税_万円_per_年": 2.5,
+        "重量税_万円_per_年": 1.0,
         "自賠責保険_万円_per_年": 0.5,
         "任意保険_万円_per_年": 4.0,
         "車検費用_万円_per_年": 2.5,
         "定期点検費用_万円_per_年": 2.0,
-        "車庫賃料_万円_per_年": 9.0,
-        "許認可費用_万円_per_年": 2.5,
-        "システム利用料_万円_per_年": 3.0,
-        "福利厚生費_万円_per_年": 10.0,
-        "社会保険料_万円_per_年": 52.0
+        "車庫賃料_万円_per_年": 9.0
       },
       "remarks": "低速電動コミュニティバス・最高速度19km/h・航続距離30km・14人乗り",
       "raw": {
