@@ -1394,8 +1394,8 @@ def _display_unified_detailed_cost_comparison(
     optimal_meta = _get_vehicle_metadata(optimal_vehicle_name)
     ecom10_meta = _get_vehicle_metadata(ecom10_vehicle_name)
 
-    optimal_hourly_wage = optimal_meta.hourly_wage if optimal_meta and optimal_meta.hourly_wage else 3000
-    ecom10_hourly_wage = ecom10_meta.hourly_wage if ecom10_meta and ecom10_meta.hourly_wage else 2800
+    optimal_hourly_wage = getattr(optimal_meta, 'hourly_wage', 3000) if optimal_meta else 3000
+    ecom10_hourly_wage = getattr(ecom10_meta, 'hourly_wage', 2800) if ecom10_meta else 2800
     helper_hourly_wage = 0  # 補助員なしと仮定
 
     # 変動費項目抽出
