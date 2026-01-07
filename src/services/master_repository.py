@@ -33,6 +33,10 @@ class VehicleCandidate:
     fixed_cost_breakdown: Dict[str, float]
     remarks: Optional[str]
     energy_consumption_kwh_per_km: Optional[float] = None  # エネルギー消費量 (kWh/km)
+    # 作業時間ベース人件費計算パラメータ
+    hourly_wage: Optional[float] = 3000.0                  # 時給（円/時間）
+    average_speed_km_per_h: Optional[float] = 30.0         # 平均速度（km/h）
+    loading_time_per_kg: Optional[float] = 2.0             # 積み込み時間（秒/kg）
 
 
 @dataclass(frozen=True)
@@ -96,6 +100,11 @@ def _load_vehicles(path: Path) -> List[VehicleCandidate]:
         if energy_kwh_per_km < 0:
             energy_kwh_per_km = 0.0
 
+        # 作業時間ベース人件費計算パラメータの取得（デフォルト値あり）
+        hourly_wage = entry.get("hourly_wage", 3000.0)
+        average_speed = entry.get("average_speed_km_per_h", 30.0)
+        loading_time = entry.get("loading_time_per_kg", 2.0)
+
         vehicles.append(
             VehicleCandidate(
                 name=entry.get("name"),
@@ -112,6 +121,10 @@ def _load_vehicles(path: Path) -> List[VehicleCandidate]:
                 fixed_cost_breakdown={k: float(v) for k, v in (entry.get("fixed_cost_breakdown") or {}).items()},
                 remarks=entry.get("remarks"),
                 energy_consumption_kwh_per_km=energy_kwh_per_km,
+                # 作業時間ベース人件費計算パラメータ
+                hourly_wage=float(hourly_wage) if hourly_wage is not None else 3000.0,
+                average_speed_km_per_h=float(average_speed) if average_speed is not None else 30.0,
+                loading_time_per_kg=float(loading_time) if loading_time is not None else 2.0,
             )
         )
     return vehicles

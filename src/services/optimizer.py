@@ -133,6 +133,7 @@ def _route_distance(distance_matrix: DistanceMatrix, order: Sequence[str]) -> fl
 def _evaluate_cost(
     vehicle: VehicleType,
     distance_m: float,
+    total_demand_kg: float = 0.0,
     vehicle_metadata: Optional[VehicleCandidate] = None
 ) -> Dict[str, float]:
     """
@@ -141,6 +142,7 @@ def _evaluate_cost(
     Args:
         vehicle: 最適化用の車両タイプ
         distance_m: 走行距離(m)
+        total_demand_kg: 総積載重量(kg)
         vehicle_metadata: 詳細内訳情報（Noneの場合は基本3項目のみ）
 
     Returns:
@@ -158,6 +160,7 @@ def _evaluate_cost(
         "distance_cost": int(variable_cost),
         "total_cost": int(total_cost),
         "distance_km": distance_km,
+        "total_demand_kg": total_demand_kg,
     }
 
     # ✨ 新規追加: エネルギー消費量計算
@@ -169,10 +172,51 @@ def _evaluate_cost(
     if vehicle_metadata is None:
         return result
 
-    # 変動費詳細
+    # ✨ 作業時間ベース人件費計算（新規ロジック）
+    if vehicle_metadata.hourly_wage and vehicle_metadata.average_speed_km_per_h:
+        # 運転手人件費 = (距離 ÷ 速度) × 時給
+        if vehicle_metadata.average_speed_km_per_h > 0:
+            driving_time_h = distance_km / vehicle_metadata.average_speed_km_per_h
+            driver_labor_cost = vehicle_metadata.hourly_wage * driving_time_h
+            result["変動費_運転手人件費"] = int(driver_labor_cost)
+            # km単価（参考値）
+            if distance_km > 0:
+                result["変動費_運転手人件費_円_per_km"] = round(driver_labor_cost / distance_km, 2)
+
+    if vehicle_metadata.hourly_wage and vehicle_metadata.loading_time_per_kg:
+        # 作業時間人件費 = (重量 × 作業効率 ÷ 3600) × 時給
+        loading_time_sec = total_demand_kg * vehicle_metadata.loading_time_per_kg
+        loading_time_h = loading_time_sec / 3600.0
+        loading_labor_cost = vehicle_metadata.hourly_wage * loading_time_h
+        result["変動費_作業時間人件費"] = int(loading_labor_cost)
+        # 重量単価（参考値）
+        if total_demand_kg > 0:
+            result["変動費_作業時間人件費_円_per_kg"] = round(loading_labor_cost / total_demand_kg, 2)
+        # km単価（参考値）
+        if distance_km > 0:
+            result["変動費_作業時間人件費_円_per_km"] = round(loading_labor_cost / distance_km, 2)
+
+    # 総人件費
+    total_labor_cost = (
+        result.get("変動費_運転手人件費", 0) +
+        result.get("変動費_作業時間人件費", 0)
+    )
+    if total_labor_cost > 0:
+        result["変動費_人件費合計"] = int(total_labor_cost)
+        if distance_km > 0:
+            result["変動費_人件費合計_円_per_km"] = round(total_labor_cost / distance_km, 2)
+
+    # 変動費詳細（旧人件費項目はスキップ）
     if vehicle_metadata.variable_cost_breakdown:
         for item_name, unit_cost in vehicle_metadata.variable_cost_breakdown.items():
             try:
+                # 🚫 旧人件費項目はスキップ（新ロジックで計算済み）
+                if item_name.startswith("作業時間人件費_"):
+                    continue
+                if item_name == "運転手人件費_円_per_km":
+                    continue
+
+                # 通常の変動費項目（距離ベース）
                 key = f"変動費_{item_name}"
                 result[key] = int(float(unit_cost) * distance_km)
             except (ValueError, TypeError):
@@ -226,13 +270,17 @@ def _solve_simple(
 
     order = _compute_route_order(depot, [entry["id"] for entry in pickups], sink)
     total_distance = _route_distance(distance_matrix, order)
+
+    # 総需要量を計算
+    total_demand = sum(max(0, int(entry["demand"])) for entry in pickups)
+
     if total_distance >= UNREACHABLE_COST:
         return NoSolution(NoSolutionReason.DISCONNECTED, "到達不能な区間があります。")
 
     best_solution: Union[Solution, None] = None
     for vehicle in vehicles:
         metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(vehicle, total_distance, metadata)
+        breakdown = _evaluate_cost(vehicle, total_distance, total_demand, metadata)
         solution = Solution(
             vehicle=vehicle,
             order=list(order),
@@ -267,8 +315,13 @@ def _solve_with_ortools(
     sink_idx = index_map[sink]
     pickup_indices = [index_map[entry["id"]] for entry in pickups]
     demands = [0] * len(point_ids_by_index)
+
+    # 総需要量を計算
+    total_demand = 0
     for entry in pickups:
-        demands[index_map[entry["id"]]] = int(entry["demand"])
+        demand_val = int(entry["demand"])
+        demands[index_map[entry["id"]]] = demand_val
+        total_demand += demand_val
 
     best_solution: Union[Solution, None] = None
 
@@ -345,7 +398,7 @@ def _solve_with_ortools(
 
         route_order = [point_ids_by_index[i] for i in route_indices]
         metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(vehicle, total_distance, metadata)
+        breakdown = _evaluate_cost(vehicle, total_distance, total_demand, metadata)
         solution = Solution(
             vehicle=vehicle,
             order=route_order,
@@ -383,7 +436,7 @@ def solve_routing(
         base_order = _compute_route_order(depot, [], sink)
         total_distance = _route_distance(distance_matrix, base_order)
         metadata = vehicle_metadata_map.get(candidate_vehicles[0].name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(candidate_vehicles[0], total_distance, metadata)
+        breakdown = _evaluate_cost(candidate_vehicles[0], total_distance, 0.0, metadata)
         return Solution(
             vehicle=candidate_vehicles[0],
             order=base_order,
