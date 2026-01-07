@@ -1645,6 +1645,83 @@ def _display_detailed_cost_breakdown(
     _display_fixed_cost_table(cost_breakdown, vehicle_name, distance_km)
 
 
+def _display_route_map_only(graph, solution: Solution) -> None:
+    """
+    ルートの地図のみを表示する。
+
+    Args:
+        graph: グラフオブジェクト
+        solution: ルート解
+    """
+    try:
+        import folium  # type: ignore
+        from streamlit_folium import st_folium  # type: ignore
+    except ModuleNotFoundError:  # pragma: no cover
+        st.info("地図表示にはfoliumとstreamlit-foliumが必要です。")
+        return
+
+    polylines = reconstruct_paths(graph, solution.order)
+    flat_coords = [coord for segment in polylines for coord in segment]
+    if flat_coords:
+        center = flat_coords[0]
+    else:
+        start_node = graph.nodes[solution.order[0]]
+        center = (float(start_node.get("lat", 0.0)), float(start_node.get("lon", 0.0)))
+
+    fmap = folium.Map(location=center, zoom_start=12)
+
+    total_points = len(solution.order)
+    for idx, point_id in enumerate(solution.order, start=1):
+        node = graph.nodes[point_id]
+        lat = float(node.get("lat", 0.0))
+        lon = float(node.get("lon", 0.0))
+        if idx == 1:
+            circle_color = "#2e7d32"
+        elif idx == total_points:
+            circle_color = "#c62828"
+        else:
+            circle_color = "#1565c0"
+
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=7,
+            color=circle_color,
+            weight=3,
+            fill=True,
+            fill_color=circle_color,
+            fill_opacity=0.85,
+            popup=f"{idx}. {point_id}",
+        ).add_to(fmap)
+
+        if idx == 1:
+            icon_anchor = (10, 20)
+        elif idx == total_points:
+            icon_anchor = (10, 0)
+        else:
+            icon_anchor = (10, 10)
+
+        badge_html = (
+            f"<div style=\"display:flex;align-items:center;justify-content:center;width:20px;height:20px;"
+            f"border-radius:50%;background-color:{circle_color};color:#ffffff;font-size:12px;font-weight:bold;\">"
+            f"{idx}</div>"
+        )
+
+        folium.map.Marker(
+            location=[lat, lon],
+            icon=folium.DivIcon(
+                icon_size=(20, 20),
+                icon_anchor=icon_anchor,
+                html=badge_html,
+            ),
+        ).add_to(fmap)
+
+    for segment in polylines:
+        if segment:
+            folium.PolyLine(segment, color="blue", weight=4, opacity=0.8).add_to(fmap)
+
+    st_folium(fmap, width=700, height=500)
+
+
 def _display_single_solution(
     graph, solution: Solution, show_banner: bool = True, label_prefix: str = "", show_vehicle_info: bool = True
 ) -> None:
@@ -1978,13 +2055,8 @@ def _display_comparison_results(
             pickup_ids = entry.get("pickup_ids") or []
             if pickup_ids:
                 st.caption(f"対象ノード: {', '.join(str(pid) for pid in pickup_ids)}")
-        _display_single_solution(
-            graph,
-            route.solution,
-            show_banner=False,
-            label_prefix=f"車両{idx} ",
-            show_vehicle_info=False,
-        )
+        # 地図のみ表示
+        _display_route_map_only(graph, route.solution)
 
 
 def check_password() -> bool:
