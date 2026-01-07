@@ -1412,11 +1412,11 @@ def _display_unified_detailed_cost_comparison(
     optimal_fixed = _extract_fixed_costs(optimal_breakdown, optimal_distance)
     ecom10_fixed = _extract_fixed_costs(ecom10_breakdown, ecom10_distance)
 
-    # 合計計算
-    optimal_variable_total = sum(item[2] for item in optimal_variable)
-    ecom10_variable_total = sum(item[2] for item in ecom10_variable)
-    optimal_fixed_total = sum(item[2] for item in optimal_fixed)
-    ecom10_fixed_total = sum(item[2] for item in ecom10_fixed)
+    # 合計計算（cost_breakdownから直接取得して正確な値を使用）
+    optimal_variable_total = int(optimal_breakdown.get("distance_cost", 0))
+    ecom10_variable_total = int(ecom10_breakdown.get("distance_cost", 0))
+    optimal_fixed_total = int(optimal_breakdown.get("fixed_cost", 0))
+    ecom10_fixed_total = int(ecom10_breakdown.get("fixed_cost", 0))
     optimal_total = int(optimal_breakdown.get("total_cost", 0))
     ecom10_total = int(ecom10_breakdown.get("total_cost", 0))
 
@@ -1489,6 +1489,7 @@ def _display_unified_detailed_cost_comparison(
         # カラム名を整形（マルチインデックス風）
         st.markdown("**表示形式**: 最適解 | eCOM-10")
         st.dataframe(df, use_container_width=True, hide_index=True)
+        st.caption("※ 変動費計・固定費計・総コストは実際の計算値です。各詳細項目は参考表示として掲載しています。")
     else:
         st.write(rows)
 
