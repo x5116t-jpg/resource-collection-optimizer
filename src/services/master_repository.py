@@ -34,6 +34,16 @@ class VehicleCandidate:
     remarks: Optional[str]
     energy_consumption_kwh_per_km: Optional[float] = None  # エネルギー消費量 (kWh/km)
 
+    # 人件費計算パラメータ（デフォルト値で後方互換性確保）
+    hourly_wage: Optional[float] = 3000.0              # 時給（円/時間）
+    average_speed_km_per_h: Optional[float] = 30.0     # 平均速度（km/h）
+    loading_time_per_kg: Optional[float] = 2.0         # 積み込み時間（秒/kg）
+
+    # 減価償却の自動算出用（任意）
+    purchase_price_manyen: Optional[float] = None
+    useful_life_years: Optional[float] = None
+    residual_value_rate: Optional[float] = 0.0
+
 
 @dataclass(frozen=True)
 class ResourceInfo:
@@ -96,6 +106,14 @@ def _load_vehicles(path: Path) -> List[VehicleCandidate]:
         if energy_kwh_per_km < 0:
             energy_kwh_per_km = 0.0
 
+        # 人件費計算パラメータの取得（デフォルト値あり）
+        hourly_wage = entry.get("hourly_wage", 3000.0)
+        average_speed = entry.get("average_speed_km_per_h", 30.0)
+        loading_time = entry.get("loading_time_per_kg", 2.0)
+        purchase_price_manyen = entry.get("purchase_price_manyen")
+        useful_life_years = entry.get("useful_life_years")
+        residual_value_rate = entry.get("residual_value_rate", 0.0)
+
         vehicles.append(
             VehicleCandidate(
                 name=entry.get("name"),
@@ -112,6 +130,13 @@ def _load_vehicles(path: Path) -> List[VehicleCandidate]:
                 fixed_cost_breakdown={k: float(v) for k, v in (entry.get("fixed_cost_breakdown") or {}).items()},
                 remarks=entry.get("remarks"),
                 energy_consumption_kwh_per_km=energy_kwh_per_km,
+                # 人件費計算パラメータ
+                hourly_wage=float(hourly_wage),
+                average_speed_km_per_h=float(average_speed),
+                loading_time_per_kg=float(loading_time),
+                purchase_price_manyen=None if purchase_price_manyen is None else float(purchase_price_manyen),
+                useful_life_years=None if useful_life_years is None else float(useful_life_years),
+                residual_value_rate=float(residual_value_rate or 0.0),
             )
         )
     return vehicles

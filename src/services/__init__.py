@@ -10,8 +10,10 @@ from .optimizer import (
     NoSolution,
     NoSolutionReason,
     solve_routing,
+    solve_path_routing,
     solve_fleet_routing,
 )
+from .integrated_optimizer import IntegratedFleetSolution, solve_integrated_routing
 from .master_repository import (
     ProcessedMasterData,
     VehicleCandidate,
@@ -38,7 +40,10 @@ __all__ = [
     "NoSolution",
     "NoSolutionReason",
     "solve_routing",
+    "solve_path_routing",
     "solve_fleet_routing",
+    "IntegratedFleetSolution",
+    "solve_integrated_routing",
     "ProcessedMasterData",
     "VehicleCandidate",
     "ResourceInfo",

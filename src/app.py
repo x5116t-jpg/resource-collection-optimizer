@@ -38,12 +38,15 @@ from services import (
     Solution,
     build_distance_matrix,
     solve_fleet_routing,
+    solve_integrated_routing,
+    IntegratedFleetSolution,
     ProcessedMasterData,
     load_processed_master,
 )
 from services.master_repository import VehicleCandidate
 from services.route_reconstruction import reconstruct_paths
 from services.spatial_index import SpatialIndex
+from services.cost_calculator import CostCalculator
 from services.ecom10_comparison import (
     compute_ecom10_alternative,
     find_alternative_vehicles,
@@ -73,6 +76,10 @@ ROLE_TO_COLOR = {
     "pickup": "blue",
     "sink": "red",
 }
+
+
+PLANNING_COST_CALCULATOR = CostCalculator()
+DEFAULT_ESTIMATED_LEG_M = 1000.0
 
 
 @dataclass(frozen=True)
@@ -556,11 +563,74 @@ def _build_vehicle_catalog(records: List[Dict[str, object]]) -> VehicleCatalog:
     return catalog
 
 
-def _vehicle_cost_score(record: Dict[str, object]) -> float:
-    name = str(record.get("name") or "").strip()
-    per_km = float(record.get("per_km_cost", 0.0) or 0.0)
-    fixed_per_km = float(record.get("fixed_cost_per_km", 0.0) or 0.0)
-    return per_km + fixed_per_km
+def _build_vehicle_candidate_lookup(master: Optional[ProcessedMasterData]) -> Dict[str, VehicleCandidate]:
+    lookup: Dict[str, VehicleCandidate] = {}
+    if not master or not master.vehicles:
+        return lookup
+    for candidate in master.vehicles:
+        if not candidate.name:
+            continue
+        lookup[candidate.name] = candidate
+    return lookup
+
+
+def _haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    import math
+
+    r = 6371000.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return r * c
+
+
+def _approx_distance_between(graph, start: Optional[str], end: Optional[str]) -> Optional[float]:
+    if graph is None or not start or not end:
+        return None
+    if start not in graph.nodes or end not in graph.nodes:
+        return None
+    start_node = graph.nodes[start]
+    end_node = graph.nodes[end]
+    lat1 = start_node.get("lat")
+    lon1 = start_node.get("lon")
+    lat2 = end_node.get("lat")
+    lon2 = end_node.get("lon")
+    if None in (lat1, lon1, lat2, lon2):
+        return None
+    return _haversine_distance(float(lat1), float(lon1), float(lat2), float(lon2))
+
+
+def _estimate_naive_distance(
+    graph,
+    depot_id: Optional[str],
+    sink_id: Optional[str],
+    pickups: Sequence[Dict[str, object]],
+) -> float:
+    sequence: List[str] = []
+    if depot_id:
+        sequence.append(depot_id)
+    sequence.extend(str(entry.get("id")) for entry in pickups if entry.get("id"))
+    if sink_id:
+        sequence.append(sink_id)
+    if depot_id:
+        sequence.append(depot_id)
+    if len(sequence) < 2:
+        legs = 1
+        return DEFAULT_ESTIMATED_LEG_M * legs
+
+    legs = max(len(sequence) - 1, 1)
+    fallback = DEFAULT_ESTIMATED_LEG_M * legs
+
+    total_distance = 0.0
+    for start, end in zip(sequence[:-1], sequence[1:]):
+        step = _approx_distance_between(graph, start, end)
+        if step is None:
+            return fallback
+        total_distance += step
+    return total_distance if total_distance > 0 else fallback
 
 
 def _vehicle_supports_resource(
@@ -614,17 +684,11 @@ def _vehicle_candidate_to_dict(candidate: "VehicleCandidate") -> Dict[str, objec
     Returns:
         _make_vehicle_type関数用のDict
     """
-    # 固定費を走行距離で按分 (年間固定費を年間走行距離で割る)
-    fixed_cost = (
-        candidate.annual_fixed_cost / candidate.annual_distance_km
-        if candidate.annual_distance_km and candidate.annual_distance_km > 0
-        else 0.0
-    )
-
     return {
         "name": candidate.name,
         "capacity_kg": candidate.capacity_kg,
-        "fixed_cost": fixed_cost,
+        # fixed_cost は「距離に依らない固定費（1回あたり）」として扱う（km単価は fixed_cost_per_km を使用）
+        "fixed_cost": 0.0,
         "per_km_cost": candidate.variable_cost_per_km or 0.0,
         "fixed_cost_per_km": candidate.fixed_cost_per_km or 0.0,
         "energy_consumption_kwh_per_km": candidate.energy_consumption_kwh_per_km or 0.0,
@@ -674,7 +738,9 @@ def _select_vehicle_for_resource(
     resource: str,
     pickups: List[Dict[str, object]],
     record_map: Dict[str, Dict[str, object]],
-    master: Optional[ProcessedMasterData]
+    master: Optional[ProcessedMasterData],
+    distance_m: float,
+    metadata_lookup: Dict[str, VehicleCandidate],
 ) -> Optional[Dict[str, object]]:
     """特定資源種別に対応する最適車両を選択"""
     total_demand = _calculate_total_demand(pickups)
@@ -694,7 +760,16 @@ def _select_vehicle_for_resource(
     if not capacity_ok:
         return None
 
-    return _select_best_vehicle(capacity_ok)
+    best_record: Optional[Dict[str, object]] = None
+    best_cost: Optional[float] = None
+    for record in capacity_ok:
+        vehicle = _make_vehicle_type(record)
+        metadata = metadata_lookup.get(vehicle.name)
+        components = PLANNING_COST_CALCULATOR.evaluate(vehicle, distance_m, metadata)
+        if best_cost is None or components.total_cost < best_cost:
+            best_cost = components.total_cost
+            best_record = record
+    return best_record
 
 
 def _filter_by_resource_compatibility(
@@ -722,10 +797,6 @@ def _filter_by_capacity(
         if capacity >= total_demand_kg:
             capacity_ok.append(record)
     return capacity_ok
-
-
-def _select_best_vehicle(candidates: Sequence[Dict[str, object]]) -> Dict[str, object]:
-    return min(candidates, key=_vehicle_cost_score)
 
 
 def _generate_error_messages(
@@ -769,6 +840,9 @@ def _plan_vehicle_allocations(
     records: List[Dict[str, object]],
     master: Optional[ProcessedMasterData],
     pickup_inputs: Sequence[Dict[str, object]],
+    graph=None,
+    depot_id: Optional[str] = None,
+    sink_id: Optional[str] = None,
 ) -> Tuple[List[Dict[str, object]], List[str]]:
     """
     複数車両での割り当て計画を作成
@@ -797,10 +871,19 @@ def _plan_vehicle_allocations(
 
     plan: List[Dict[str, object]] = []
     warnings: List[str] = []
+    metadata_lookup = _build_vehicle_candidate_lookup(master)
 
     # 各資源種別に最適車両を割り当て
     for resource, pickups in sorted(resource_groups.items()):
-        vehicle = _select_vehicle_for_resource(resource, pickups, record_map, master)
+        distance_m = _estimate_naive_distance(graph, depot_id, sink_id, pickups)
+        vehicle = _select_vehicle_for_resource(
+            resource,
+            pickups,
+            record_map,
+            master,
+            distance_m,
+            metadata_lookup,
+        )
 
         if vehicle is None:
             total_demand = _calculate_total_demand(pickups)
@@ -1199,6 +1282,307 @@ def _get_vehicle_metadata(vehicle_name: str) -> Optional[VehicleCandidate]:
     return None
 
 
+def _extract_variable_costs(
+    cost_breakdown: Dict[str, float],
+    distance_km: float,
+    total_demand_kg: float,
+    hourly_wage: float,
+    helper_hourly_wage: float
+) -> List[Tuple[str, str, int]]:
+    """
+    変動費項目を抽出し、(表示名, 単価文字列, 金額)のリストを返す。
+
+    Args:
+        cost_breakdown: コスト内訳
+        distance_km: 走行距離
+        total_demand_kg: 総需要量
+        hourly_wage: 運転手時給
+        helper_hourly_wage: 補助員時給
+
+    Returns:
+        [(表示名, 単価文字列, 金額), ...]
+    """
+    items: List[Tuple[str, str, int]] = []
+    used_keys: set[str] = set()
+
+    def _unit_cost_per_km(amount: int) -> str:
+        return f"{(amount / distance_km if distance_km > 0 else 0):.2f}"
+
+    # 燃料費(円/km)
+    fuel_key = "変動費_燃料費_円_per_km"
+    if fuel_key in cost_breakdown:
+        fuel_cost = int(cost_breakdown.get(fuel_key, 0))
+        if fuel_cost:
+            items.append(("  燃料費(円/km)", _unit_cost_per_km(fuel_cost), fuel_cost))
+        used_keys.add(fuel_key)
+
+    # 運転手人件費(円/h)
+    driver_key = "変動費_運転手人件費"
+    if driver_key in cost_breakdown:
+        driver_cost = int(cost_breakdown.get(driver_key, 0))
+        if driver_cost:
+            items.append(("  運転手人件費(円/h)", f"{int(hourly_wage):,}", driver_cost))
+        used_keys.add(driver_key)
+
+    # 作業時間人件費(円/kg)
+    loading_key = "変動費_作業時間人件費"
+    unit_cost_key = "変動費_作業時間人件費_円_per_kg"
+    if loading_key in cost_breakdown:
+        loading_cost = int(cost_breakdown.get(loading_key, 0))
+        unit_cost = float(cost_breakdown.get(unit_cost_key, 0.0))
+        if unit_cost == 0.0:
+            unit_cost = loading_cost / total_demand_kg if total_demand_kg > 0 else 0.0
+        if loading_cost:
+            items.append(("  作業時間人件費(円/kg)", f"{unit_cost:.2f}", loading_cost))
+        used_keys.add(loading_key)
+    used_keys.add(unit_cost_key)  # 単価キーは“内訳”としては表示しない
+
+    # 損料(円/km)（タイヤ+修理を集約したもの）
+    damage_key = "変動費_損料_円_per_km"
+    if damage_key in cost_breakdown:
+        damage_cost = int(cost_breakdown.get(damage_key, 0))
+        if damage_cost:
+            items.append(("  損料(円/km)", _unit_cost_per_km(damage_cost), damage_cost))
+        used_keys.add(damage_key)
+
+    return items
+
+
+def _extract_fixed_costs(
+    cost_breakdown: Dict[str, float],
+    distance_km: float
+) -> List[Tuple[str, str, int]]:
+    """
+    固定費項目を抽出し、(表示名, 単価文字列, 金額)のリストを返す。
+
+    Args:
+        cost_breakdown: コスト内訳
+        distance_km: 走行距離
+
+    Returns:
+        [(表示名, 単価文字列, 金額), ...]
+    """
+    items: List[Tuple[str, str, int]] = []
+    used_keys: set[str] = set()
+
+    def _unit_cost_per_km(amount: int) -> str:
+        return f"{(amount / distance_km if distance_km > 0 else 0):.2f}"
+
+    # 項目定義（表示順）
+    fixed_items_config = [
+        ("固定費_減価償却費_万円_per_年", "  減価償却費(円/km)"),
+        ("固定費_自動車税_万円_per_年", "  自動車税(円/km)"),
+        ("固定費_重量税_万円_per_年", "  重量税(円/km)"),
+        ("固定費_車庫賃料_万円_per_年", "  車庫賃料(円/km)"),
+    ]
+
+    # 単純な項目
+    for key, display_name in fixed_items_config:
+        if key in cost_breakdown:
+            cost = int(cost_breakdown[key])
+            unit_cost = cost / distance_km if distance_km > 0 else 0
+            items.append((display_name, f"{unit_cost:.2f}", cost))
+            used_keys.add(key)
+
+    # 保険費用（自賠責、任意）(円/km) = 自賠責 + 任意
+    liability_key = "固定費_自賠責保険_万円_per_年"
+    voluntary_key = "固定費_任意保険_万円_per_年"
+    liability_cost = int(cost_breakdown.get(liability_key, 0))
+    voluntary_cost = int(cost_breakdown.get(voluntary_key, 0))
+    total_insurance = liability_cost + voluntary_cost
+    if total_insurance > 0:
+        unit_cost = total_insurance / distance_km if distance_km > 0 else 0
+        items.append(("  保険費用（自賠責、任意）(円/km)", f"{unit_cost:.2f}", total_insurance))
+        used_keys.add(liability_key)
+        used_keys.add(voluntary_key)
+
+    # 車検費用(円/km) = 車検費用 + 定期点検費用
+    inspection_key = "固定費_車検費用_万円_per_年"
+    maintenance_key = "固定費_定期点検費用_万円_per_年"
+    inspection_cost = int(cost_breakdown.get(inspection_key, 0))
+    maintenance_cost = int(cost_breakdown.get(maintenance_key, 0))
+    total_inspection = inspection_cost + maintenance_cost
+    if total_inspection > 0:
+        unit_cost = total_inspection / distance_km if distance_km > 0 else 0
+        items.append(("  車検費用(円/km)", f"{unit_cost:.2f}", total_inspection))
+        used_keys.add(inspection_key)
+        used_keys.add(maintenance_key)
+
+    # 以降の固定費_* の網羅表示は行わない（必要項目に限定する）
+
+    return items
+
+
+def _display_unified_cost_comparison(
+    optimal_breakdown: Dict[str, float],
+    ecom10_breakdown: Dict[str, float]
+) -> None:
+    """
+    最適解とeCOM-10のコスト内訳を統合表示する。
+
+    Args:
+        optimal_breakdown: 最適解のコスト内訳
+        ecom10_breakdown: eCOM-10のコスト内訳
+    """
+    st.markdown("### 💰 コスト内訳")
+
+    # データ抽出
+    rows = [
+        {
+            "項目": "固定費",
+            "金額（最適解）": f"{int(optimal_breakdown.get('fixed_cost', 0)):,}",
+            "金額（eCOM-10）": f"{int(ecom10_breakdown.get('fixed_cost', 0)):,}"
+        },
+        {
+            "項目": "変動費",
+            "金額（最適解）": f"{int(optimal_breakdown.get('distance_cost', 0)):,}",
+            "金額（eCOM-10）": f"{int(ecom10_breakdown.get('distance_cost', 0)):,}"
+        },
+        {
+            "項目": "総額",
+            "金額（最適解）": f"{int(optimal_breakdown.get('total_cost', 0)):,}",
+            "金額（eCOM-10）": f"{int(ecom10_breakdown.get('total_cost', 0)):,}"
+        },
+    ]
+
+    # DataFrame表示
+    if pd is not None:
+        df = pd.DataFrame(rows)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    else:
+        st.write(rows)
+
+
+def _display_unified_detailed_cost_comparison(
+    optimal_breakdown: Dict[str, float],
+    ecom10_breakdown: Dict[str, float],
+    optimal_vehicle_name: str,
+    ecom10_vehicle_name: str
+) -> None:
+    """
+    最適解とeCOM-10のコスト詳細内訳を統合表示する。
+
+    Args:
+        optimal_breakdown: 最適解のコスト内訳
+        ecom10_breakdown: eCOM-10のコスト内訳
+        optimal_vehicle_name: 最適解の車両名
+        ecom10_vehicle_name: eCOM-10の車両名
+    """
+    st.markdown("### 💰 コスト詳細内訳")
+    st.markdown(f"**車両**: {optimal_vehicle_name} vs {ecom10_vehicle_name}")
+
+    # 距離と需要量を取得
+    optimal_distance = optimal_breakdown.get("distance_km", 0.0)
+    ecom10_distance = ecom10_breakdown.get("distance_km", 0.0)
+    optimal_demand = optimal_breakdown.get("total_demand_kg", 0.0)
+    ecom10_demand = ecom10_breakdown.get("total_demand_kg", 0.0)
+
+    # 時給を取得（vehicle_metadataから取得するのが理想だが、デフォルト値を使用）
+    # VehicleCandidateから取得するロジックを追加する場合は、
+    # _get_vehicle_metadata()関数を使用して取得可能
+    optimal_meta = _get_vehicle_metadata(optimal_vehicle_name)
+    ecom10_meta = _get_vehicle_metadata(ecom10_vehicle_name)
+
+    optimal_hourly_wage = getattr(optimal_meta, 'hourly_wage', 3000) if optimal_meta else 3000
+    ecom10_hourly_wage = getattr(ecom10_meta, 'hourly_wage', 2800) if ecom10_meta else 2800
+    helper_hourly_wage = 0  # 補助員なしと仮定
+
+    # 変動費項目抽出
+    optimal_variable = _extract_variable_costs(
+        optimal_breakdown, optimal_distance, optimal_demand,
+        optimal_hourly_wage, helper_hourly_wage
+    )
+    ecom10_variable = _extract_variable_costs(
+        ecom10_breakdown, ecom10_distance, ecom10_demand,
+        ecom10_hourly_wage, helper_hourly_wage
+    )
+
+    # 固定費項目抽出
+    optimal_fixed = _extract_fixed_costs(optimal_breakdown, optimal_distance)
+    ecom10_fixed = _extract_fixed_costs(ecom10_breakdown, ecom10_distance)
+
+    # 合計計算（cost_breakdownから直接取得して正確な値を使用）
+    optimal_variable_total = int(optimal_breakdown.get("distance_cost", 0))
+    ecom10_variable_total = int(ecom10_breakdown.get("distance_cost", 0))
+    optimal_fixed_total = int(optimal_breakdown.get("fixed_cost", 0))
+    ecom10_fixed_total = int(ecom10_breakdown.get("fixed_cost", 0))
+    optimal_total = int(optimal_breakdown.get("total_cost", 0))
+    ecom10_total = int(ecom10_breakdown.get("total_cost", 0))
+
+    # テーブル作成
+    rows = []
+
+    # 変動費計
+    rows.append({
+        "費用項目": "変動費計",
+        "最適解_単価": "-",
+        "最適解_金額（円）": f"{optimal_variable_total:,}",
+        "eCOM-10_単価": "-",
+        "eCOM-10_金額（円）": f"{ecom10_variable_total:,}"
+    })
+
+    # 変動費項目（項目数が多い方に合わせる）
+    max_variable_len = max(len(optimal_variable), len(ecom10_variable))
+    for i in range(max_variable_len):
+        optimal_item = optimal_variable[i] if i < len(optimal_variable) else ("", "", 0)
+        ecom10_item = ecom10_variable[i] if i < len(ecom10_variable) else ("", "", 0)
+
+        # 項目名を統一（最適解優先、なければeCOM-10）
+        item_name = optimal_item[0] if optimal_item[0] else ecom10_item[0]
+
+        rows.append({
+            "費用項目": item_name,
+            "最適解_単価": optimal_item[1] if optimal_item[1] else "-",
+            "最適解_金額（円）": f"{optimal_item[2]:,}" if optimal_item[2] > 0 else "0",
+            "eCOM-10_単価": ecom10_item[1] if ecom10_item[1] else "-",
+            "eCOM-10_金額（円）": f"{ecom10_item[2]:,}" if ecom10_item[2] > 0 else "0"
+        })
+
+    # 固定費計
+    rows.append({
+        "費用項目": "固定費計",
+        "最適解_単価": "-",
+        "最適解_金額（円）": f"{optimal_fixed_total:,}",
+        "eCOM-10_単価": "-",
+        "eCOM-10_金額（円）": f"{ecom10_fixed_total:,}"
+    })
+
+    # 固定費項目
+    max_fixed_len = max(len(optimal_fixed), len(ecom10_fixed))
+    for i in range(max_fixed_len):
+        optimal_item = optimal_fixed[i] if i < len(optimal_fixed) else ("", "", 0)
+        ecom10_item = ecom10_fixed[i] if i < len(ecom10_fixed) else ("", "", 0)
+
+        item_name = optimal_item[0] if optimal_item[0] else ecom10_item[0]
+
+        rows.append({
+            "費用項目": item_name,
+            "最適解_単価": optimal_item[1] if optimal_item[1] else "-",
+            "最適解_金額（円）": f"{optimal_item[2]:,}" if optimal_item[2] > 0 else "0",
+            "eCOM-10_単価": ecom10_item[1] if ecom10_item[1] else "-",
+            "eCOM-10_金額（円）": f"{ecom10_item[2]:,}" if ecom10_item[2] > 0 else "0"
+        })
+
+    # 総コスト
+    rows.append({
+        "費用項目": "総コスト",
+        "最適解_単価": "-",
+        "最適解_金額（円）": f"{optimal_total:,}",
+        "eCOM-10_単価": "-",
+        "eCOM-10_金額（円）": f"{ecom10_total:,}"
+    })
+
+    # DataFrame表示
+    if pd is not None:
+        df = pd.DataFrame(rows)
+        # カラム名を整形（マルチインデックス風）
+        st.markdown("**表示形式**: 最適解 | eCOM-10")
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.caption("※ 変動費計・固定費計・総コストは実際の計算値です。各詳細項目は参考表示として掲載しています。")
+    else:
+        st.write(rows)
+
+
 def _display_variable_cost_table(
     cost_breakdown: Dict[str, float],
     vehicle_name: str,
@@ -1207,12 +1591,20 @@ def _display_variable_cost_table(
     """変動費詳細テーブルを表示"""
     st.markdown(f"**車両**: {vehicle_name} | **走行距離**: {distance_km:.2f} km")
 
-    # 変動費項目の抽出
-    variable_items = [
-        (k.replace("変動費_", ""), v)
-        for k, v in cost_breakdown.items()
-        if k.startswith("変動費_")
-    ]
+    meta = _get_vehicle_metadata(vehicle_name)
+    hourly_wage = getattr(meta, "hourly_wage", 3000) if meta else 3000
+    helper_hourly_wage = 0
+    # NOTE: 現状は cost_breakdown には total_demand_kg を載せていないため、表示上は0になる。
+    # 将来、便/車両ごとの需要量を表示したい場合は、route.pickups に紐づくqtyを合算して渡す。
+    total_demand_kg = float(cost_breakdown.get("total_demand_kg", 0.0) or 0.0)
+
+    variable_items = _extract_variable_costs(
+        cost_breakdown=cost_breakdown,
+        distance_km=distance_km,
+        total_demand_kg=total_demand_kg,
+        hourly_wage=float(hourly_wage or 0),
+        helper_hourly_wage=float(helper_hourly_wage),
+    )
 
     if not variable_items:
         st.info("変動費の詳細データがありません")
@@ -1220,14 +1612,11 @@ def _display_variable_cost_table(
 
     # テーブル作成
     rows = []
-    for item_name, cost in variable_items:
-        # 単価を逆算
-        unit_cost = cost / distance_km if distance_km > 0 else 0
+    for item_name, unit_str, cost in variable_items:
         rows.append({
-            "費用項目": item_name,
-            "単価 (円/km)": f"{unit_cost:.2f}",
-            "走行距離 (km)": f"{distance_km:.2f}",
-            "金額 (円)": f"{int(cost):,}"
+            "費用項目": item_name.strip(),
+            "単価": unit_str,
+            "金額 (円)": f"{int(cost):,}",
         })
 
     # DataFrameで表示
@@ -1250,27 +1639,18 @@ def _display_fixed_cost_table(
     """固定費詳細テーブルを表示"""
     st.markdown(f"**車両**: {vehicle_name} | **走行距離**: {distance_km:.2f} km")
 
-    # 固定費項目の抽出
-    fixed_items = [
-        (k.replace("固定費_", ""), v)
-        for k, v in cost_breakdown.items()
-        if k.startswith("固定費_")
-    ]
-
+    fixed_items = _extract_fixed_costs(cost_breakdown, distance_km)
     if not fixed_items:
         st.info("固定費の詳細データがありません")
         return
 
     # テーブル作成
     rows = []
-    for item_name, cost in fixed_items:
-        # km単価を逆算
-        per_km = cost / distance_km if distance_km > 0 else 0
+    for item_name, unit_str, cost in fixed_items:
         rows.append({
-            "費用項目": item_name,
-            "km単価 (円/km)": f"{per_km:.2f}",
-            "走行距離 (km)": f"{distance_km:.2f}",
-            "金額 (円)": f"{int(cost):,}"
+            "費用項目": item_name.strip(),
+            "単価": unit_str,
+            "金額 (円)": f"{int(cost):,}",
         })
 
     # DataFrameで表示
@@ -1349,8 +1729,83 @@ def _display_detailed_cost_breakdown(
     _display_variable_cost_table(cost_breakdown, vehicle_name, distance_km)
     st.markdown("---")
     _display_fixed_cost_table(cost_breakdown, vehicle_name, distance_km)
-    st.markdown("---")
-    _display_cost_formula(cost_breakdown)
+
+
+def _display_route_map_only(graph, solution: Solution) -> None:
+    """
+    ルートの地図のみを表示する。
+
+    Args:
+        graph: グラフオブジェクト
+        solution: ルート解
+    """
+    try:
+        import folium  # type: ignore
+        from streamlit_folium import st_folium  # type: ignore
+    except ModuleNotFoundError:  # pragma: no cover
+        st.info("地図表示にはfoliumとstreamlit-foliumが必要です。")
+        return
+
+    polylines = reconstruct_paths(graph, solution.order)
+    flat_coords = [coord for segment in polylines for coord in segment]
+    if flat_coords:
+        center = flat_coords[0]
+    else:
+        start_node = graph.nodes[solution.order[0]]
+        center = (float(start_node.get("lat", 0.0)), float(start_node.get("lon", 0.0)))
+
+    fmap = folium.Map(location=center, zoom_start=12)
+
+    total_points = len(solution.order)
+    for idx, point_id in enumerate(solution.order, start=1):
+        node = graph.nodes[point_id]
+        lat = float(node.get("lat", 0.0))
+        lon = float(node.get("lon", 0.0))
+        if idx == 1:
+            circle_color = "#2e7d32"
+        elif idx == total_points:
+            circle_color = "#c62828"
+        else:
+            circle_color = "#1565c0"
+
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=7,
+            color=circle_color,
+            weight=3,
+            fill=True,
+            fill_color=circle_color,
+            fill_opacity=0.85,
+            popup=f"{idx}. {point_id}",
+        ).add_to(fmap)
+
+        if idx == 1:
+            icon_anchor = (10, 20)
+        elif idx == total_points:
+            icon_anchor = (10, 0)
+        else:
+            icon_anchor = (10, 10)
+
+        badge_html = (
+            f"<div style=\"display:flex;align-items:center;justify-content:center;width:20px;height:20px;"
+            f"border-radius:50%;background-color:{circle_color};color:#ffffff;font-size:12px;font-weight:bold;\">"
+            f"{idx}</div>"
+        )
+
+        folium.map.Marker(
+            location=[lat, lon],
+            icon=folium.DivIcon(
+                icon_size=(20, 20),
+                icon_anchor=icon_anchor,
+                html=badge_html,
+            ),
+        ).add_to(fmap)
+
+    for segment in polylines:
+        if segment:
+            folium.PolyLine(segment, color="blue", weight=4, opacity=0.8).add_to(fmap)
+
+    st_folium(fmap, width=700, height=500)
 
 
 def _display_single_solution(
@@ -1635,39 +2090,38 @@ def _display_comparison_results(
     st.markdown("---")
     st.markdown("## 📋 最適化結果の詳細")
 
-    # コスト内訳テーブル
-    st.markdown("### 💰 コスト内訳（最適解）")
-    breakdown_rows = [
-        {"項目": "固定費", "金額": optimal_solution.cost_breakdown.get("fixed_cost", 0.0)},
-        {"項目": "距離費", "金額": optimal_solution.cost_breakdown.get("distance_cost", 0.0)},
-        {"項目": "総額", "金額": optimal_solution.cost_breakdown.get("total_cost", 0.0)},
-    ]
-    if pd is not None:
-        st.table(pd.DataFrame(breakdown_rows))
-    else:
-        st.write(breakdown_rows)
-
-    # コスト内訳テーブル（eCOM-10）
+    # 統合コスト内訳表示
     if isinstance(ecom10_solution, FleetSolution):
-        st.markdown("### 💰 コスト内訳（eCOM-10）")
-        ecom10_breakdown_rows = [
-            {"項目": "固定費", "金額": ecom10_solution.cost_breakdown.get("fixed_cost", 0.0)},
-            {"項目": "距離費", "金額": ecom10_solution.cost_breakdown.get("distance_cost", 0.0)},
-            {"項目": "総額", "金額": ecom10_solution.cost_breakdown.get("total_cost", 0.0)},
+        _display_unified_cost_comparison(
+            optimal_solution.cost_breakdown,
+            ecom10_solution.cost_breakdown
+        )
+
+        st.markdown("---")
+
+        # 統合コスト詳細内訳表示
+        if ecom10_solution.routes and optimal_solution.routes:
+            optimal_vehicle_name = optimal_solution.routes[0].vehicle.name
+            ecom10_vehicle_name = ecom10_solution.routes[0].vehicle.name
+
+            _display_unified_detailed_cost_comparison(
+                optimal_solution.routes[0].solution.cost_breakdown,
+                ecom10_solution.routes[0].solution.cost_breakdown,
+                optimal_vehicle_name,
+                ecom10_vehicle_name
+            )
+    else:
+        # eCOM-10が利用不可の場合は最適解のみ表示
+        st.markdown("### 💰 コスト内訳（最適解）")
+        breakdown_rows = [
+            {"項目": "固定費", "金額": f"{int(optimal_solution.cost_breakdown.get('fixed_cost', 0)):,}"},
+            {"項目": "変動費", "金額": f"{int(optimal_solution.cost_breakdown.get('distance_cost', 0)):,}"},
+            {"項目": "総額", "金額": f"{int(optimal_solution.cost_breakdown.get('total_cost', 0)):,}"},
         ]
         if pd is not None:
-            st.table(pd.DataFrame(ecom10_breakdown_rows))
+            st.table(pd.DataFrame(breakdown_rows))
         else:
-            st.write(ecom10_breakdown_rows)
-
-        # コスト詳細内訳（eCOM-10）
-        # eCOM-10は通常単一車両なので、routes[0]のcost_breakdownを使用
-        if ecom10_solution.routes:
-            first_route = ecom10_solution.routes[0]
-            _display_detailed_cost_breakdown(
-                first_route.solution.cost_breakdown,
-                first_route.vehicle.name
-            )
+            st.write(breakdown_rows)
 
     # 各車両ごとのルート詳細
     st.markdown("### 🚗 各車両のルート詳細")
@@ -1687,13 +2141,8 @@ def _display_comparison_results(
             pickup_ids = entry.get("pickup_ids") or []
             if pickup_ids:
                 st.caption(f"対象ノード: {', '.join(str(pid) for pid in pickup_ids)}")
-        _display_single_solution(
-            graph,
-            route.solution,
-            show_banner=False,
-            label_prefix=f"車両{idx} ",
-            show_vehicle_info=False,
-        )
+        # 地図のみ表示
+        _display_route_map_only(graph, route.solution)
 
 
 def check_password() -> bool:
@@ -1784,6 +2233,8 @@ def main() -> None:
 
     st.sidebar.write(f"ノード数: {metadata.get('node_count', len(graph.nodes))}")
     st.sidebar.write(f"エッジ数: {metadata.get('edge_count', edge_count())}")
+    st.sidebar.markdown("---")
+    integrated_mode = st.sidebar.checkbox("統合最適化（案B）を使用", value=False, help="最大5便→最大4台にまとめる統合最適化を実行します。")
 
     # Phase 1-1: 選択状況のサイドバー表示
     st.sidebar.markdown("---")
@@ -2027,6 +2478,9 @@ def main() -> None:
         st.session_state["vehicles"],
         processed_master,
         pickup_inputs,
+        graph=graph,
+        depot_id=depot_id,
+        sink_id=sink_id,
     )
     st.session_state["vehicle_filter_warnings"] = list(dict.fromkeys(plan_warnings))
     st.session_state["fleet_plan"] = vehicle_plan
@@ -2056,8 +2510,9 @@ def main() -> None:
             for pickup_id in pickup_selection
         ) if pickup_selection else False,
         "車種が1種類以上設定されている": len(vehicles_defined) > 0,
-        "車種割当プランが作成されている": len(vehicle_plan) > 0,
-        "車種割当に警告がない": len(st.session_state.get("vehicle_filter_warnings", [])) == 0,
+        # 統合最適化では車種割当プランは必須ではない（互換性は solver 側で制約）
+        "車種割当プランが作成されている": True if integrated_mode else (len(vehicle_plan) > 0),
+        "車種割当に警告がない": True if integrated_mode else (len(st.session_state.get("vehicle_filter_warnings", [])) == 0),
     }
 
     # チェック結果の表示
@@ -2144,7 +2599,32 @@ def main() -> None:
                     vehicle_metadata_map[candidate.name] = candidate
 
             with st.spinner("最適化を実行中..."):
-                result = solve_fleet_routing(distance_matrix, depot_id, sink_id, assignments, vehicle_metadata_map)
+                if integrated_mode:
+                    all_vehicle_types = [v for v in catalog.list_vehicles() if v.name]
+                    integrated_result = solve_integrated_routing(
+                        distance_matrix=distance_matrix,
+                        depot=depot_id,
+                        sink=sink_id,
+                        pickup_inputs=pickup_inputs,
+                        vehicle_types=all_vehicle_types,
+                        master=processed_master,
+                        vehicle_metadata_map=vehicle_metadata_map,
+                        max_physical_vehicles=4,
+                        max_trips=5,
+                    )
+                    if isinstance(integrated_result, IntegratedFleetSolution):
+                        result = integrated_result.fleet
+                        st.session_state["integrated_meta"] = {
+                            "vehicle_count": integrated_result.vehicle_count,
+                            "trip_count": integrated_result.trip_count,
+                            "trips": [t.pickup_ids for t in integrated_result.trips],
+                        }
+                    else:
+                        result = integrated_result
+                        st.session_state.pop("integrated_meta", None)
+                else:
+                    result = solve_fleet_routing(distance_matrix, depot_id, sink_id, assignments, vehicle_metadata_map)
+                    st.session_state.pop("integrated_meta", None)
 
             # eCOM-10 代替案の計算
             ecom10_result = None
@@ -2208,8 +2688,15 @@ def main() -> None:
         plan_summary = stored_solution.get("plan")
         ecom10_solution = stored_solution.get("ecom10_solution")
         ecom10_compatibility = stored_solution.get("ecom10_compatibility")
+        integrated_meta = st.session_state.get("integrated_meta")
 
         if isinstance(solution_obj, FleetSolution):
+            if isinstance(integrated_meta, dict):
+                st.markdown("### 🧩 統合最適化（案B）情報")
+                st.caption(
+                    f"便数: {integrated_meta.get('trip_count', '-')}, "
+                    f"使用車両台数: {integrated_meta.get('vehicle_count', '-')}"
+                )
             # eCOM-10 比較結果がある場合は比較表示
             if ecom10_solution is not None and ecom10_compatibility is not None:
                 _display_comparison_results(
