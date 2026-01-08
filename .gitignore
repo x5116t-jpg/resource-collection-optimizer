@@ -40,6 +40,7 @@ desktop.ini
 *.tmp
 *.bak
 *.cache
+*_backup_*.json
 
 # Testing
 .pytest_cache/

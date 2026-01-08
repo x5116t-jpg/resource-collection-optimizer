@@ -10,6 +10,7 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Uni
 from .distance_matrix import DistanceMatrix, UNREACHABLE_COST
 from .vehicle_catalog import VehicleType
 from .master_repository import VehicleCandidate
+from .cost_calculator import CostCalculator, cost_components_to_breakdown
 
 try:  # pragma: no cover - optional dependency
     from ortools.constraint_solver import pywrapcp, routing_enums_pb2  # type: ignore
@@ -17,6 +18,9 @@ try:  # pragma: no cover - optional dependency
     ORTOOLS_AVAILABLE = True
 except ModuleNotFoundError:  # pragma: no cover
     ORTOOLS_AVAILABLE = False
+
+
+_COST_CALCULATOR = CostCalculator()
 
 
 class NoSolutionReason(str, Enum):
@@ -133,67 +137,18 @@ def _route_distance(distance_matrix: DistanceMatrix, order: Sequence[str]) -> fl
 def _evaluate_cost(
     vehicle: VehicleType,
     distance_m: float,
-    vehicle_metadata: Optional[VehicleCandidate] = None
+    vehicle_metadata: Optional[VehicleCandidate] = None,
+    total_demand_kg: int = 0,
 ) -> Dict[str, float]:
-    """
-    車両のコストとエネルギー消費量を評価し、詳細内訳を含むcost_breakdownを返す。
+    """Wrapper that delegates to the shared ``CostCalculator``."""
 
-    Args:
-        vehicle: 最適化用の車両タイプ
-        distance_m: 走行距離(m)
-        vehicle_metadata: 詳細内訳情報（Noneの場合は基本3項目のみ）
-
-    Returns:
-        cost_breakdown辞書（基本3項目 + エネルギー消費量 + 詳細内訳）
-    """
-    distance_km = distance_m / 1000.0
-
-    # 基本計算（既存ロジック）
-    variable_cost = vehicle.distance_cost(distance_m)
-    fixed_cost = vehicle.fixed_cost_for_distance(distance_m)
-    total_cost = fixed_cost + variable_cost
-
-    result = {
-        "fixed_cost": int(fixed_cost),
-        "distance_cost": int(variable_cost),
-        "total_cost": int(total_cost),
-        "distance_km": distance_km,
-    }
-
-    # ✨ 新規追加: エネルギー消費量計算
-    if vehicle.energy_consumption_kwh_per_km > 0:
-        energy_kwh = vehicle.energy_consumption_kwh(distance_m)
-        result["energy_consumption_kwh"] = round(energy_kwh, 3)  # 小数点3桁で丸め
-
-    # 詳細内訳の計算（新規ロジック）
-    if vehicle_metadata is None:
-        return result
-
-    # 変動費詳細
-    if vehicle_metadata.variable_cost_breakdown:
-        for item_name, unit_cost in vehicle_metadata.variable_cost_breakdown.items():
-            try:
-                key = f"変動費_{item_name}"
-                result[key] = int(float(unit_cost) * distance_km)
-            except (ValueError, TypeError):
-                continue
-
-    # 固定費詳細
-    if vehicle_metadata.fixed_cost_breakdown and vehicle_metadata.annual_distance_km:
-        if vehicle_metadata.annual_distance_km > 0:
-            for item_name, annual_manyen in vehicle_metadata.fixed_cost_breakdown.items():
-                try:
-                    # 万円 → 円 変換
-                    annual_yen = float(annual_manyen) * 10000
-                    # km単価計算
-                    per_km = annual_yen / vehicle_metadata.annual_distance_km
-                    # この走行距離での費用
-                    key = f"固定費_{item_name}"
-                    result[key] = int(per_km * distance_km)
-                except (ValueError, TypeError, ZeroDivisionError):
-                    continue
-
-    return result
+    components = _COST_CALCULATOR.evaluate(
+        vehicle,
+        distance_m,
+        vehicle_metadata,
+        total_demand_kg=max(0, int(total_demand_kg)),
+    )
+    return cost_components_to_breakdown(components)
 
 
 def _detect_disconnects(distance_matrix: DistanceMatrix, depot: str, sink: str, pickups: Sequence[Dict[str, Union[str, int]]]) -> bool:
@@ -214,6 +169,153 @@ def _detect_disconnects(distance_matrix: DistanceMatrix, depot: str, sink: str, 
     return False
 
 
+def _detect_disconnects_path(
+    distance_matrix: DistanceMatrix,
+    start: str,
+    end: str,
+    pickups: Sequence[Dict[str, Union[str, int]]],
+) -> bool:
+    """Return True if any required leg is unreachable for an open route (start -> ... -> end)."""
+
+    checkpoints = set([start, end] + [p["id"] for p in pickups])
+    for point in checkpoints:
+        if not distance_matrix.is_reachable(start, point):
+            return True
+        if not distance_matrix.is_reachable(point, end):
+            return True
+    if not distance_matrix.is_reachable(start, end):
+        return True
+    return False
+
+
+def _solve_path_with_ortools(
+    distance_matrix: DistanceMatrix,
+    pickups: Sequence[Dict[str, Union[str, int]]],
+    start: str,
+    end: str,
+    vehicle: VehicleType,
+    vehicle_metadata_map: Optional[Dict[str, VehicleCandidate]] = None,
+) -> Union[Solution, NoSolution]:
+    """Single-vehicle open route solver using OR-Tools (start -> pickups -> end)."""
+
+    point_ids_by_index, index_map = _prepare_indices(distance_matrix)
+    start_idx = index_map[start]
+    end_idx = index_map[end]
+    pickup_indices = [index_map[entry["id"]] for entry in pickups]
+    demands = [0] * len(point_ids_by_index)
+    for entry in pickups:
+        demands[index_map[entry["id"]]] = int(entry["demand"])
+
+    manager = pywrapcp.RoutingIndexManager(len(point_ids_by_index), 1, start_idx, end_idx)
+    routing = pywrapcp.RoutingModel(manager)
+
+    def distance_callback(from_index: int, to_index: int) -> int:
+        from_node = manager.IndexToNode(from_index)
+        to_node = manager.IndexToNode(to_index)
+        distance = distance_matrix.matrix[from_node][to_node]
+        if distance >= UNREACHABLE_COST:
+            return int(UNREACHABLE_COST)
+        return int(round(distance))
+
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+
+    def demand_callback(from_index: int) -> int:
+        node = manager.IndexToNode(from_index)
+        return int(demands[node])
+
+    demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
+    routing.AddDimensionWithVehicleCapacity(
+        demand_callback_index,
+        0,
+        [vehicle.capacity_kg],
+        True,
+        "Capacity",
+    )
+
+    # Explicitly require visiting all pickup nodes.
+    for pickup_idx in pickup_indices:
+        routing.AddDisjunction([routing.NodeToIndex(pickup_idx)], 10_000_000, 1)
+
+    search_params = pywrapcp.DefaultRoutingSearchParameters()
+    search_params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    search_params.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    search_params.time_limit.seconds = 5
+
+    assignment = routing.SolveWithParameters(search_params)
+    if assignment is None:
+        return NoSolution(NoSolutionReason.INFEASIBLE, "OR-Toolsで解が見つかりませんでした。")
+
+    index = routing.Start(0)
+    route_indices: List[int] = []
+    total_distance = 0.0
+    while not routing.IsEnd(index):
+        node = manager.IndexToNode(index)
+        route_indices.append(node)
+        next_index = assignment.Value(routing.NextVar(index))
+        next_node = manager.IndexToNode(next_index)
+        total_distance += distance_matrix.matrix[node][next_node]
+        index = next_index
+    node = manager.IndexToNode(index)
+    route_indices.append(node)
+
+    route_order = [point_ids_by_index[i] for i in route_indices]
+    metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
+    total_demand = int(sum(max(0, entry["demand"]) for entry in pickups))
+    breakdown = _evaluate_cost(vehicle, total_distance, metadata, total_demand_kg=total_demand)
+    return Solution(
+        vehicle=vehicle,
+        order=route_order,
+        total_distance_m=total_distance,
+        cost_breakdown=breakdown,
+    )
+
+
+def solve_path_routing(
+    distance_matrix: DistanceMatrix,
+    pickups: Sequence[PickupInput],
+    start: str,
+    end: str,
+    vehicle: VehicleType,
+    vehicle_metadata_map: Optional[Dict[str, VehicleCandidate]] = None,
+) -> Union[Solution, NoSolution]:
+    """Solve an open route (start -> pickups -> end) for a single vehicle."""
+
+    pickup_entries = _normalise_pickups(pickups)
+    total_demand = sum(max(0, entry["demand"]) for entry in pickup_entries)
+    if vehicle.capacity_kg < total_demand:
+        return NoSolution(NoSolutionReason.CAPACITY, "容量を満たす車種がありません。")
+
+    if _detect_disconnects_path(distance_matrix, start, end, pickup_entries):
+        return NoSolution(NoSolutionReason.DISCONNECTED, "到達不能な区間があります。")
+
+    if not pickup_entries:
+        order = [start] if start == end else [start, end]
+        total_distance = 0.0 if start == end else distance_matrix.distance(start, end)
+        metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
+        breakdown = _evaluate_cost(vehicle, total_distance, metadata, total_demand_kg=0)
+        return Solution(vehicle=vehicle, order=order, total_distance_m=total_distance, cost_breakdown=breakdown)
+
+    if ORTOOLS_AVAILABLE:
+        try:
+            return _solve_path_with_ortools(distance_matrix, pickup_entries, start, end, vehicle, vehicle_metadata_map)
+        except Exception:  # pragma: no cover - safety net
+            pass
+
+    # Fallback: visit pickups in provided order.
+    order = [start] + [entry["id"] for entry in pickup_entries] + [end]
+    total_distance = 0.0
+    for a, b in zip(order[:-1], order[1:]):
+        step = distance_matrix.distance(a, b)
+        if step >= UNREACHABLE_COST:
+            return NoSolution(NoSolutionReason.DISCONNECTED, "到達不能な区間があります。")
+        total_distance += step
+
+    metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
+    breakdown = _evaluate_cost(vehicle, total_distance, metadata, total_demand_kg=total_demand)
+    return Solution(vehicle=vehicle, order=order, total_distance_m=total_distance, cost_breakdown=breakdown)
+
+
 def _solve_simple(
     distance_matrix: DistanceMatrix,
     pickups: Sequence[Dict[str, Union[str, int]]],
@@ -229,10 +331,11 @@ def _solve_simple(
     if total_distance >= UNREACHABLE_COST:
         return NoSolution(NoSolutionReason.DISCONNECTED, "到達不能な区間があります。")
 
+    total_demand = int(sum(max(0, entry["demand"]) for entry in pickups))
     best_solution: Union[Solution, None] = None
     for vehicle in vehicles:
         metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(vehicle, total_distance, metadata)
+        breakdown = _evaluate_cost(vehicle, total_distance, metadata, total_demand_kg=total_demand)
         solution = Solution(
             vehicle=vehicle,
             order=list(order),
@@ -345,7 +448,8 @@ def _solve_with_ortools(
 
         route_order = [point_ids_by_index[i] for i in route_indices]
         metadata = vehicle_metadata_map.get(vehicle.name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(vehicle, total_distance, metadata)
+        total_demand = int(sum(max(0, entry["demand"]) for entry in pickups))
+        breakdown = _evaluate_cost(vehicle, total_distance, metadata, total_demand_kg=total_demand)
         solution = Solution(
             vehicle=vehicle,
             order=route_order,
@@ -383,7 +487,7 @@ def solve_routing(
         base_order = _compute_route_order(depot, [], sink)
         total_distance = _route_distance(distance_matrix, base_order)
         metadata = vehicle_metadata_map.get(candidate_vehicles[0].name) if vehicle_metadata_map else None
-        breakdown = _evaluate_cost(candidate_vehicles[0], total_distance, metadata)
+        breakdown = _evaluate_cost(candidate_vehicles[0], total_distance, metadata, total_demand_kg=0)
         return Solution(
             vehicle=candidate_vehicles[0],
             order=base_order,
@@ -441,5 +545,5 @@ def solve_fleet_routing(
 
     totals.setdefault("fixed_cost", 0.0)
     totals.setdefault("distance_cost", 0.0)
-    totals.setdefault("total_cost", totals["fixed_cost"] + totals["distance_cost"])
+    totals["total_cost"] = totals["fixed_cost"] + totals["distance_cost"]
     return FleetSolution(routes=routes, cost_breakdown=dict(totals))

@@ -75,11 +75,13 @@ def _convert_vehicle(spec: VehicleSpec) -> Dict[str, Any]:
         if key.endswith("_円_per_km"):
             variable_breakdown[key] = value
         elif key.endswith("_万円_per_年"):
-            per_year = value * 10000.0
-            fixed_breakdown[key] = per_year / distance_for_fixed
+            # NOTE:
+            # - fixed_cost_breakdown は「万円/年」を保持する（キーサフィックスと意味を一致させる）
+            # - km当たりへの換算や丸めは CostCalculator 側で一元的に行う
+            fixed_breakdown[key] = value
 
     variable_cost = sum(variable_breakdown.values())
-    annual_fixed_cost = sum((metrics[key].value or 0.0) * 10000.0 for key in metrics if key.endswith("_万円_per_年"))
+    annual_fixed_cost = sum((fixed_breakdown[key] or 0.0) * 10000.0 for key in fixed_breakdown)
     fixed_cost_per_km = annual_fixed_cost / distance_for_fixed if distance_for_fixed else 0.0
 
     record = {
